@@ -1047,6 +1047,52 @@ local function run()
 		CONFIG._lastClaim = os.clock()
 	end
 
+	local function doClaimCage()
+		if not alive then
+			return false
+		end
+		if not SendTagDataRemote then
+			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
+		end
+		local bases = getBasesFolder()
+		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
+		local cageBridge = base and getCageBridgeInBase(base)
+		if not SendTagDataRemote or not cageBridge then
+			return false
+		end
+		SendTagDataRemote:FireServer("CageBridge", cageBridge, "claimFishes")
+		return true
+	end
+
+	local function runAutoClaimCageOnce()
+		if not alive then
+			return
+		end
+		ReplicatedStorage:WaitForChild("src", 20)
+		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+		getBasesFolder(15)
+		for _ = 1, 15 do
+			if not alive or not claimCage then
+				return
+			end
+			if resolvePlayerBase() then
+				break
+			end
+			task.wait(0.5)
+		end
+		for _ = 1, 6 do
+			if not alive or not claimCage then
+				return
+			end
+			if doClaimCage() then
+				break
+			end
+			resolvePlayerBase()
+			task.wait(0.5)
+		end
+		CONFIG._lastCageClaim = os.clock()
+	end
+
 	local function doEquipBest()
 		if not alive or not farming or not equipBest then
 			return false
@@ -1153,10 +1199,12 @@ local function run()
 		setBadge(claiming, ClaimBadgeText)
 		setBadge(equipBest, EquipBadgeText)
 		setBadge(autoSell, SellBadgeText)
+		setBadge(claimCage, CageBadgeText)
 		setNavActive("Auto Farm", farming)
 		setNavActive("Auto Claim", claiming)
 		setNavActive("Auto Equip Best", equipBest)
 		setNavActive("Auto Sell Inventory", autoSell)
+		setNavActive("Auto Claim Cage", claimCage)
 	end
 
 	local function toggleAutoClaim()
@@ -1164,6 +1212,17 @@ local function run()
 		if claiming then
 			task.spawn(function()
 				runAutoClaimOnce()
+				refreshStatus()
+			end)
+		end
+		refreshStatus()
+	end
+
+	local function toggleAutoClaimCage()
+		claimCage = not claimCage
+		if claimCage then
+			task.spawn(function()
+				runAutoClaimCageOnce()
 				refreshStatus()
 			end)
 		end
@@ -1201,6 +1260,8 @@ local function run()
 		refreshStatus()
 	end)
 
+	CageBtn.MouseButton1Click:Connect(toggleAutoClaimCage)
+
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
 	track(UserInputService.InputBegan:Connect(function(input)
@@ -1221,7 +1282,11 @@ local function run()
 			CONFIG._lastClaim = now
 			doClaim()
 		end
-		if claiming then
+		if claimCage and now - CONFIG._lastCageClaim >= CONFIG.CageClaimDelay then
+			CONFIG._lastCageClaim = now
+			doClaimCage()
+		end
+		if claiming or claimCage then
 			refreshStatus()
 		end
 	end))
