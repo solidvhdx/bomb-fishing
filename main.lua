@@ -30,8 +30,6 @@ end
 local THROW_POWER = 1.0
 local TOGGLE_KEY = Enum.KeyCode.V
 local HOTKEY_LABEL = "V"
-local learnedBaseName = nil
-
 local THEME = {
 	background = Color3.fromRGB(10, 10, 10),
 	foreground = Color3.fromRGB(250, 250, 250),
@@ -127,7 +125,6 @@ local function run()
 
 	local CONFIG = {
 		AfterStartWait = 0.5,
-		RoundWait = 12,
 		RoundMaxWait = 120,
 		PostFinishWait = 0.25,
 		StartArg = 0,
@@ -572,10 +569,9 @@ local function run()
 	local finishedHookInstalled = false
 	local SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
 	local SellInventoryRemote = getKnitRE("SellService", "SellInventory")
-	local cachedBaseName = learnedBaseName
+	local cachedBaseName = nil
 
 	local function setLearnedBase(name)
-		learnedBaseName = name
 		cachedBaseName = name
 	end
 
@@ -1322,7 +1318,6 @@ local function run()
 	end
 
 	local function setupRebirthSystems()
-		loadGameConfig()
 		local src = ReplicatedStorage:WaitForChild("src", 30)
 		loadGameConfig()
 		if not src then
@@ -1485,28 +1480,6 @@ local function run()
 		else
 			setRowActive("Auto Rebirth", false)
 		end
-	end
-
-	local function toggleAutoClaim()
-		claiming = not claiming
-		if claiming then
-			task.spawn(function()
-				runAutoClaimOnce()
-				refreshStatus()
-			end)
-		end
-		refreshStatus()
-	end
-
-	local function toggleAutoClaimCage()
-		claimCage = not claimCage
-		if claimCage then
-			task.spawn(function()
-				runAutoClaimCageOnce()
-				refreshStatus()
-			end)
-		end
-		refreshStatus()
 	end
 
 	local function startupPlotAndClaim()
