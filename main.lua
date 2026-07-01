@@ -92,12 +92,15 @@ local function run()
 		PostFinishWait = 0.25,
 		StartArg = 0,
 		ClaimDelay = 60.0,
+		CageClaimDelay = 120.0,
 		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
 		_lastClaim = 0,
+		_lastCageClaim = 0,
 	}
 
 	local farming = false
 	local claiming = false
+	local claimCage = false
 	local equipBest = false
 	local autoSell = false
 	local guiVisible = true
@@ -116,7 +119,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(380, 240)
+	Root.Size = UDim2.fromOffset(380, 275)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -266,6 +269,7 @@ local function run()
 	local ClaimBtn = makeNavItem("Auto Claim", 2)
 	local EquipBtn = makeNavItem("Auto Equip Best", 3)
 	local SellBtn = makeNavItem("Auto Sell Inventory", 4)
+	local CageBtn = makeNavItem("Auto Claim Cage", 5)
 
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
@@ -334,6 +338,7 @@ local function run()
 	local ClaimBadgeText = makeStatusRow("Auto Claim", 2)
 	local EquipBadgeText = makeStatusRow("Auto Equip Best", 3)
 	local SellBadgeText = makeStatusRow("Auto Sell Inventory", 4)
+	local CageBadgeText = makeStatusRow("Auto Claim Cage", 5)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -493,6 +498,7 @@ local function run()
 		alive = false
 		farming = false
 		claiming = false
+		claimCage = false
 		pcall(function()
 			ContextActionService:UnbindAction(TOGGLE_ACTION)
 		end)
@@ -623,6 +629,10 @@ local function run()
 
 	local function getAquariumInBase(base)
 		return getInteractableInBase(base, "Aquarium")
+	end
+
+	local function getCageBridgeInBase(base)
+		return getInteractableInBase(base, "CageBridge")
 	end
 
 	local function getWorldPosition(inst)
