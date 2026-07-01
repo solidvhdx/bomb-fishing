@@ -1,6 +1,7 @@
 --[[ bomb fishing farm ]]
 
-local function protectGui(gui)	pcall(function()
+local function protectGui(gui)
+	pcall(function()
 		if protect_gui then protect_gui(gui) end
 	end)
 	pcall(function()
@@ -31,17 +32,15 @@ local TOGGLE_KEY = Enum.KeyCode.V
 local HOTKEY_LABEL = "V"
 local learnedBaseName = nil
 
-local THEME = {	background = Color3.fromRGB(10, 10, 10),
+local THEME = {
+	background = Color3.fromRGB(10, 10, 10),
 	foreground = Color3.fromRGB(250, 250, 250),
 	card = Color3.fromRGB(23, 23, 23),
 	mutedForeground = Color3.fromRGB(161, 161, 170),
 	border = Color3.fromRGB(38, 38, 38),
-	primary = Color3.fromRGB(250, 250, 250),
-	primaryForeground = Color3.fromRGB(23, 23, 23),
 	secondary = Color3.fromRGB(38, 38, 38),
 	secondaryForeground = Color3.fromRGB(250, 250, 250),
 	accent = Color3.fromRGB(38, 38, 38),
-	accentForeground = Color3.fromRGB(250, 250, 250),
 	sidebar = Color3.fromRGB(23, 23, 23),
 	sidebarAccent = Color3.fromRGB(38, 38, 38),
 	destructive = Color3.fromRGB(248, 113, 113),
@@ -667,16 +666,18 @@ local function run()
 		return false
 	end
 
-	local function getCollectInBase(base)
+	local function getInteractableInBase(base, name)
 		local floor1 = base:FindFirstChild("Floor1")
 		local interactables = floor1 and floor1:FindFirstChild("Interactables")
-		return interactables and interactables:FindFirstChild("Collect")
+		return interactables and interactables:FindFirstChild(name)
+	end
+
+	local function getCollectInBase(base)
+		return getInteractableInBase(base, "Collect")
 	end
 
 	local function getAquariumInBase(base)
-		local floor1 = base:FindFirstChild("Floor1")
-		local interactables = floor1 and floor1:FindFirstChild("Interactables")
-		return interactables and interactables:FindFirstChild("Aquarium")
+		return getInteractableInBase(base, "Aquarium")
 	end
 
 	local function getWorldPosition(inst)
@@ -752,9 +753,7 @@ local function run()
 	end
 
 	local function getYourBasePartInBase(base)
-		local floor1 = base:FindFirstChild("Floor1")
-		local interactables = floor1 and floor1:FindFirstChild("Interactables")
-		return interactables and interactables:FindFirstChild("YourBasePart")
+		return getInteractableInBase(base, "YourBasePart")
 	end
 
 	local function getBaseFolderFromInstance(inst, bases)
@@ -973,28 +972,6 @@ local function run()
 		return current
 	end
 
-	local function findPlotClickable(node)
-		if not node then
-			return nil
-		end
-		if node:IsA("GuiButton") then
-			return node
-		end
-		local cur = node
-		while cur do
-			if cur:IsA("GuiButton") then
-				return cur
-			end
-			cur = cur.Parent
-		end
-		for _, desc in ipairs(node:GetDescendants()) do
-			if desc:IsA("GuiButton") then
-				return desc
-			end
-		end
-		return nil
-	end
-
 	local function pressGuiOnce(btn)
 		if not btn or not btn:IsA("GuiButton") then
 			return false
@@ -1028,11 +1005,31 @@ local function run()
 		if not target then
 			target = resolveGuiPath(game:GetService("StarterGui"), CONFIG.PlotButtonPath)
 		end
-		local btn = findPlotClickable(target)
-		if not btn then
+		if not target then
 			return false
 		end
-		return pressGuiOnce(btn)
+
+		local btn = target:IsA("GuiButton") and target or nil
+		if not btn then
+			local cur = target
+			while cur do
+				if cur:IsA("GuiButton") then
+					btn = cur
+					break
+				end
+				cur = cur.Parent
+			end
+		end
+		if not btn then
+			for _, desc in ipairs(target:GetDescendants()) do
+				if desc:IsA("GuiButton") then
+					btn = desc
+					break
+				end
+			end
+		end
+
+		return btn and pressGuiOnce(btn) or false
 	end
 
 	local function doStart()
@@ -1187,14 +1184,7 @@ local function run()
 		setNavActive("Auto Equip Best", equipBest)
 	end
 
-	FarmBtn.MouseButton1Click:Connect(function()
-		farming = not farming
-		if farming then
-			startFarmLoop()
-		end
-		refreshStatus()
-	end)
-	ClaimBtn.MouseButton1Click:Connect(function()
+	local function toggleAutoClaim()
 		claiming = not claiming
 		if claiming then
 			task.spawn(function()
@@ -1203,7 +1193,7 @@ local function run()
 			end)
 		end
 		refreshStatus()
-	end)
+	end
 
 	local function startupPlotAndClaim()
 		if not alive then
@@ -1216,6 +1206,15 @@ local function run()
 		claiming = false
 		refreshStatus()
 	end
+
+	FarmBtn.MouseButton1Click:Connect(function()
+		farming = not farming
+		if farming then
+			startFarmLoop()
+		end
+		refreshStatus()
+	end)
+	ClaimBtn.MouseButton1Click:Connect(toggleAutoClaim)
 
 	EquipBtn.MouseButton1Click:Connect(function()
 		equipBest = not equipBest
