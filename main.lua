@@ -1,7 +1,6 @@
---[[ Bomb Fishing autofarm · https://github.com/solidvhdx/bomb-fishing ]]
+--[[ bomb fishing farm ]]
 
-local function protectGui(gui)
-	pcall(function()
+local function protectGui(gui)	pcall(function()
 		if protect_gui then protect_gui(gui) end
 	end)
 	pcall(function()
@@ -32,9 +31,7 @@ local TOGGLE_KEY = Enum.KeyCode.V
 local HOTKEY_LABEL = "V"
 local learnedBaseName = nil
 
--- shadcn/ui neutral dark tokens (ui.shadcn.com)
-local THEME = {
-	background = Color3.fromRGB(10, 10, 10),
+local THEME = {	background = Color3.fromRGB(10, 10, 10),
 	foreground = Color3.fromRGB(250, 250, 250),
 	card = Color3.fromRGB(23, 23, 23),
 	mutedForeground = Color3.fromRGB(161, 161, 170),
@@ -91,17 +88,18 @@ local function run()
 	local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
 	local CONFIG = {
-		StartGuiPath = { "MainScreen", "OtherScreen", "Start", "Button" },
 		AfterStartWait = 0.5,
-		ThrowDelay = 12.0,
+		RoundWait = 12,
+		PostFinishWait = 0.25,
+		StartArg = 0,
 		ClaimDelay = 60.0,
-		_lastCycle = 0,
 		_lastClaim = 0,
 	}
 
 	local farming = false
 	local claiming = false
 	local guiVisible = true
+	local farmLoopRunning = false
 
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "BombFishingFarm"
@@ -116,7 +114,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(400, 300)
+	Root.Size = UDim2.fromOffset(400, 280)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -126,9 +124,7 @@ local function run()
 	corner(Root, THEME.radius)
 	stroke(Root, THEME.border)
 
-	-- Top bar (title + close)
-	local TopBar = Instance.new("Frame")
-	TopBar.Name = "TopBar"
+	local TopBar = Instance.new("Frame")	TopBar.Name = "TopBar"
 	TopBar.Size = UDim2.new(1, 0, 0, HEADER_H)
 	TopBar.BackgroundColor3 = THEME.sidebar
 	TopBar.BorderSizePixel = 0
@@ -179,9 +175,7 @@ local function run()
 		}):Play()
 	end)
 
-	-- Body (sidebar + main)
-	local Body = Instance.new("Frame")
-	Body.Name = "Body"
+	local Body = Instance.new("Frame")	Body.Name = "Body"
 	Body.Size = UDim2.new(1, 0, 1, -(HEADER_H + FOOTER_H))
 	Body.Position = UDim2.fromOffset(0, HEADER_H)
 	Body.BackgroundTransparency = 1
@@ -345,7 +339,6 @@ local function run()
 	BadgeText.Parent = Badge
 
 	local ClaimCard = makeCard("Auto Claim", 2)
-
 	local ClaimRow = Instance.new("Frame")
 	ClaimRow.LayoutOrder = 2
 	ClaimRow.Size = UDim2.new(1, 0, 0, 28)
@@ -369,23 +362,7 @@ local function run()
 	ClaimBadgeText.Text = "OFF"
 	ClaimBadgeText.Parent = ClaimBadge
 
-	local ClaimHint = Instance.new("TextLabel")
-	ClaimHint.LayoutOrder = 3
-	ClaimHint.Size = UDim2.new(1, 0, 0, 0)
-	ClaimHint.AutomaticSize = Enum.AutomaticSize.Y
-	ClaimHint.BackgroundTransparency = 1
-	ClaimHint.Font = Enum.Font.Gotham
-	ClaimHint.TextSize = 11
-	ClaimHint.TextXAlignment = Enum.TextXAlignment.Left
-	ClaimHint.TextYAlignment = Enum.TextYAlignment.Top
-	ClaimHint.TextWrapped = true
-	ClaimHint.TextColor3 = THEME.mutedForeground
-	ClaimHint.Text = "Stay at your base the first time you turn this on so the script can find your plot."
-	ClaimHint.Parent = ClaimCard
-
-	-- Footer (hotkey hint)
-	local Footer = Instance.new("Frame")
-	Footer.Name = "Footer"
+	local Footer = Instance.new("Frame")	Footer.Name = "Footer"
 	Footer.Size = UDim2.new(1, 0, 0, FOOTER_H)
 	Footer.Position = UDim2.new(0, 0, 1, -FOOTER_H)
 	Footer.BackgroundColor3 = THEME.sidebar
@@ -572,9 +549,7 @@ local function run()
 		end
 	end)
 
-	-- ── Game logic ────────────────────────────────────────────────────────────
-	local function getKnitRE(serviceName, remoteName)
-		local src = ReplicatedStorage:FindFirstChild("src")
+	local function getKnitRE(serviceName, remoteName)		local src = ReplicatedStorage:FindFirstChild("src")
 		if not src then return nil end
 		local re = src:FindFirstChild("Modules")
 		re = re and re:FindFirstChild("KnitClient")
@@ -592,6 +567,7 @@ local function run()
 		return getKnitRE("BombService", remoteName)
 	end
 
+	local StartRemote = getBombRE("Start")
 	local ThrowRemote = getBombRE("Throw")
 	local SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
 	local cachedBaseName = learnedBaseName
@@ -604,6 +580,7 @@ local function run()
 	task.spawn(function()
 		local src = ReplicatedStorage:WaitForChild("src", 15)
 		if not src then return end
+		StartRemote = StartRemote or getBombRE("Start")
 		ThrowRemote = ThrowRemote or getBombRE("Throw")
 		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
 
@@ -949,56 +926,10 @@ local function run()
 		return nil
 	end
 
-	local function getPlayerBaseFolder()
-		return resolvePlayerBase()
-	end
-
-	local function getCollectTarget()
-		local base = getPlayerBaseFolder()
-		return base and getCollectInBase(base)
-	end
-
-	local function resolveGuiPath(root, path)
-		local current = root
-		for _, name in ipairs(path) do
-			current = current and current:FindFirstChild(name)
-		end
-		return current
-	end
-
-	local function clickGuiButton(btn)
-		if not btn then return false end
-		if firesignal then
-			firesignal(btn.MouseButton1Click)
-			if btn.Activated then firesignal(btn.Activated) end
-			return true
-		end
-		if getconnections then
-			for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-				if conn.Function then conn:Function() end
-			end
-			return true
-		end
-		return false
-	end
-
-	local function getStartButton()
-		local pg = LocalPlayer:FindFirstChild("PlayerGui")
-		if not pg then return nil end
-		local btn = resolveGuiPath(pg, CONFIG.StartGuiPath)
-		if btn and btn:IsA("GuiButton") then return btn end
-		return nil
-	end
-
-	local function doStart()
-		local btn = getStartButton()
-		if btn and clickGuiButton(btn) then return true end
-		local startRemote = getBombRE("Start")
-		if startRemote then
-			startRemote:FireServer()
-			return true
-		end
-		return false
+	local function doStart()		if not StartRemote then StartRemote = getBombRE("Start") end
+		if not StartRemote then return false end
+		StartRemote:FireServer(CONFIG.StartArg)
+		return true
 	end
 
 	local function doThrow()
@@ -1009,17 +940,44 @@ local function run()
 	end
 
 	local function doFarmCycle()
-		if not alive then
+		if not alive or not farming then
 			return
 		end
-		doStart()
+
+		if not doStart() then
+			task.wait(2)
+			return
+		end
+
 		task.wait(CONFIG.AfterStartWait)
-		if not alive then
+		if not alive or not farming then
 			return
 		end
-		doThrow()
+
+		if not doThrow() then
+			task.wait(2)
+			return
+		end
+
+		task.wait(CONFIG.RoundWait)
+
+		if CONFIG.PostFinishWait > 0 then
+			task.wait(CONFIG.PostFinishWait)
+		end
 	end
 
+	local function startFarmLoop()
+		if farmLoopRunning then
+			return
+		end
+		farmLoopRunning = true
+		task.spawn(function()
+			while alive and farming do
+				doFarmCycle()
+			end
+			farmLoopRunning = false
+		end)
+	end
 	local function doClaim()
 		if not alive then
 			return false
@@ -1068,9 +1026,11 @@ local function run()
 
 	FarmBtn.MouseButton1Click:Connect(function()
 		farming = not farming
+		if farming then
+			startFarmLoop()
+		end
 		refreshStatus()
 	end)
-
 	ClaimBtn.MouseButton1Click:Connect(function()
 		claiming = not claiming
 		if claiming then
@@ -1096,13 +1056,9 @@ local function run()
 		refreshStatus()
 	end)
 
-	CloseBtn.MouseButton1Click:Connect(function()
-		showCloseConfirm()
-	end)
+	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
-	-- Drag from top bar
-	local dragging, dragStart, startPos = false, nil, nil
-	TopBar.InputBegan:Connect(function(input)
+	local dragging, dragStart, startPos = false, nil, nil	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = true
 			dragStart = input.Position
@@ -1138,15 +1094,11 @@ local function run()
 			return
 		end
 		local now = os.clock()
-		if farming and now - CONFIG._lastCycle >= CONFIG.ThrowDelay then
-			CONFIG._lastCycle = now
-			task.spawn(doFarmCycle)
-		end
 		if claiming and now - CONFIG._lastClaim >= CONFIG.ClaimDelay then
 			CONFIG._lastClaim = now
 			doClaim()
 		end
-		if farming or claiming then
+		if claiming then
 			refreshStatus()
 		end
 	end))
