@@ -1,4 +1,6 @@
-﻿local function protectGui(gui)
+﻿--[[ bomb fishing farm ]]
+
+local function protectGui(gui)
 	pcall(function()
 		if protect_gui then protect_gui(gui) end
 	end)
