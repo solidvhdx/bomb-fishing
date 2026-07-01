@@ -93,6 +93,8 @@ local function run()
 		PostFinishWait = 0.25,
 		StartArg = 0,
 		ClaimDelay = 60.0,
+		PlotButtonPath = { "MainScreen", "TopScreen", "Plot", "Button" },
+		StartupPlotWait = 1,
 		_lastClaim = 0,
 	}
 
@@ -577,7 +579,8 @@ local function run()
 		end
 	end)
 
-	local function getKnitRE(serviceName, remoteName)		local src = ReplicatedStorage:FindFirstChild("src")
+	local function getKnitRE(serviceName, remoteName)
+		local src = ReplicatedStorage:FindFirstChild("src")
 		if not src then return nil end
 		local re = src:FindFirstChild("Modules")
 		re = re and re:FindFirstChild("KnitClient")
@@ -960,6 +963,42 @@ local function run()
 		return nil
 	end
 
+	local function resolveGuiPath(root, path)
+		local current = root
+		for _, name in ipairs(path) do
+			current = current and current:FindFirstChild(name)
+		end
+		return current
+	end
+
+	local function clickGuiButton(btn)
+		if not btn then return false end
+		if firesignal then
+			firesignal(btn.MouseButton1Click)
+			if btn.Activated then firesignal(btn.Activated) end
+			return true
+		end
+		if getconnections then
+			for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+				if conn.Function then conn:Function() end
+			end
+			return true
+		end
+		return false
+	end
+
+	local function getPlotButton()
+		local pg = LocalPlayer:FindFirstChild("PlayerGui")
+		if not pg then return nil end
+		local btn = resolveGuiPath(pg, CONFIG.PlotButtonPath)
+		if btn and btn:IsA("GuiButton") then return btn end
+		return nil
+	end
+
+	local function pressPlotButton()
+		return clickGuiButton(getPlotButton())
+	end
+
 	local function doStart()
 		if not StartRemote then StartRemote = getBombRE("Start") end
 		if not StartRemote then return false end
@@ -1006,6 +1045,28 @@ local function run()
 		end
 		SendTagDataRemote:FireServer("Aquarium", aquarium, "equipBest")
 		return true
+	end
+
+	local function cachePlotOnStartup()
+		if not alive then return end
+
+		ReplicatedStorage:WaitForChild("src", 30)
+		getBasesFolder(60)
+		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+
+		LocalPlayer:WaitForChild("PlayerGui", 30)
+		for _ = 1, 30 do
+			if not alive then return end
+			if getPlotButton() then break end
+			task.wait(1)
+		end
+
+		pressPlotButton()
+		task.wait(CONFIG.StartupPlotWait)
+
+		if not alive then return end
+		doClaim()
+		resolvePlayerBase()
 	end
 
 	local function doFarmCycle()
@@ -1179,16 +1240,7 @@ local function run()
 		end
 	end))
 
-	task.spawn(function()
-		ReplicatedStorage:WaitForChild("src", 30)
-		getBasesFolder(60)
-		for _ = 1, 30 do
-			if resolvePlayerBase() then
-				break
-			end
-			task.wait(1)
-		end
-	end)
+	task.spawn(cachePlotOnStartup)
 
 	refreshStatus()
 end
