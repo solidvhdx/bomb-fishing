@@ -133,6 +133,15 @@ local function run()
 	TopBar.Active = true
 	TopBar.Parent = Root
 
+	local DragHandle = Instance.new("TextButton")
+	DragHandle.Name = "DragHandle"
+	DragHandle.Size = UDim2.fromScale(1, 1)
+	DragHandle.BackgroundTransparency = 1
+	DragHandle.Text = ""
+	DragHandle.AutoButtonColor = false
+	DragHandle.ZIndex = 1
+	DragHandle.Parent = TopBar
+
 	local TopBarBorder = Instance.new("Frame")
 	TopBarBorder.Size = UDim2.new(1, 0, 0, 1)
 	TopBarBorder.Position = UDim2.new(0, 0, 1, -1)
@@ -151,6 +160,7 @@ local function run()
 	TopTitle.TextXAlignment = Enum.TextXAlignment.Left
 	TopTitle.TextColor3 = THEME.foreground
 	TopTitle.Text = "Bomb Fishing"
+	TopTitle.ZIndex = 2
 	TopTitle.Parent = TopBar
 
 	local CloseBtn = Instance.new("TextButton")
@@ -163,7 +173,7 @@ local function run()
 	CloseBtn.TextSize = 14
 	CloseBtn.TextColor3 = THEME.mutedForeground
 	CloseBtn.Text = "X"
-	CloseBtn.ZIndex = 2
+	CloseBtn.ZIndex = 3
 	CloseBtn.Parent = TopBar
 	corner(CloseBtn, THEME.radiusSm)
 	stroke(CloseBtn, THEME.border)
@@ -1226,25 +1236,23 @@ local function run()
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
 	local dragging, dragStart, startPos = false, nil, nil
-	local function beginDrag(input)
-		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
-			return
+	DragHandle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = Root.Position
 		end
-		if input.Target == CloseBtn then
-			return
-		end
-		dragging = true
-		dragStart = input.Position
-		startPos = Root.Position
-	end
-	local function endDrag(input)
+	end)
+	DragHandle.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = false
 		end
-	end
-
-	TopBar.InputBegan:Connect(beginDrag)
-	track(UserInputService.InputEnded:Connect(endDrag))
+	end)
+	track(UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end))
 	track(UserInputService.InputChanged:Connect(function(input)
 		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 			local d = input.Position - dragStart
