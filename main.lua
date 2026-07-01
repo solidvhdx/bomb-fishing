@@ -1414,6 +1414,11 @@ local function run()
 			doSellInventory()
 		end
 	end
+
+	local function startFarmLoop()
+		if not alive or not farming then
+			return
+		end
 		farmGeneration = farmGeneration + 1
 		local generation = farmGeneration
 		task.spawn(function()
