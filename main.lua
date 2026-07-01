@@ -1034,47 +1034,55 @@ local function run()
 		return pressGuiOnce(btn)
 	end
 
-	local function cachePlotOnStartup()
-		if not alive then
-			return
-		end
-
-		LocalPlayer:WaitForChild("PlayerGui", 15)
-		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
-		getBasesFolder()
-
-		for _ = 1, 20 do
+	local function waitForPlotGui(maxSeconds)
+		local deadline = os.clock() + maxSeconds
+		while os.clock() < deadline do
 			if not alive then
-				return
+				return false
 			end
-			if pressPlotButton() then
-				break
+			local pg = LocalPlayer:FindFirstChild("PlayerGui")
+			if pg and resolveGuiPath(pg, CONFIG.PlotButtonPath) then
+				return true
 			end
 			task.wait(0.25)
 		end
+		return false
+	end
 
-		task.wait(CONFIG.StartupPlotWait)
-		if not alive then
-			return
+	local function waitForSendTagDataRemote(maxSeconds)
+		local deadline = os.clock() + maxSeconds
+		while os.clock() < deadline do
+			if not alive then
+				return nil
+			end
+			local src = ReplicatedStorage:FindFirstChild("src")
+			if src then
+				SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+				if SendTagDataRemote then
+					return SendTagDataRemote
+				end
+			end
+			task.wait(0.25)
 		end
-
-		resolvePlayerBase()
-		doClaim()
-		resolvePlayerBase()
+		return SendTagDataRemote
 	end
 
-	local function doStart()
-		if not StartRemote then StartRemote = getBombRE("Start") end
-		if not StartRemote then return false end
-		StartRemote:FireServer(CONFIG.StartArg)
-		return true
-	end
-
-	local function doThrow()
-		if not ThrowRemote then ThrowRemote = getBombRE("Throw") end
-		if not ThrowRemote then return false end
-		ThrowRemote:FireServer(THROW_POWER)
-		return true
+	local function tryResolveBaseForClaim(maxSeconds)
+		local deadline = os.clock() + maxSeconds
+		while os.clock() < deadline do
+			if not alive then
+				return nil
+			end
+			local bases = getBasesFolder()
+			if bases then
+				local base = resolvePlayerBase()
+				if base and getCollectInBase(base) then
+					return base
+				end
+			end
+			task.wait(0.25)
+		end
+		return nil
 	end
 
 	local function doClaim()
@@ -1091,6 +1099,61 @@ local function run()
 			return false
 		end
 		SendTagDataRemote:FireServer("Collect", target, "collectCash")
+		return true
+	end
+
+	local function cachePlotOnStartup()
+		if not alive then
+			return
+		end
+
+		LocalPlayer:WaitForChild("PlayerGui", 15)
+		waitForPlotGui(10)
+		waitForSendTagDataRemote(20)
+		getBasesFolder(15)
+
+		local plotPressed = false
+		for _ = 1, 20 do
+			if not alive then
+				return
+			end
+			if pressPlotButton() then
+				plotPressed = true
+				break
+			end
+			task.wait(0.25)
+		end
+
+		task.wait(CONFIG.StartupPlotWait)
+
+		local resolveSeconds = plotPressed and 10 or 3
+		tryResolveBaseForClaim(resolveSeconds)
+
+		for _ = 1, 12 do
+			if not alive then
+				return
+			end
+			if doClaim() then
+				break
+			end
+			resolvePlayerBase()
+			task.wait(0.5)
+		end
+
+		resolvePlayerBase()
+	end
+
+	local function doStart()
+		if not StartRemote then StartRemote = getBombRE("Start") end
+		if not StartRemote then return false end
+		StartRemote:FireServer(CONFIG.StartArg)
+		return true
+	end
+
+	local function doThrow()
+		if not ThrowRemote then ThrowRemote = getBombRE("Throw") end
+		if not ThrowRemote then return false end
+		ThrowRemote:FireServer(THROW_POWER)
 		return true
 	end
 
@@ -1197,20 +1260,29 @@ local function run()
 		claiming = not claiming
 		if claiming then
 			task.spawn(function()
+				waitForSendTagDataRemote(20)
 				getBasesFolder(15)
 				if not cachedBaseName then
-					for _ = 1, 10 do
+					for _ = 1, 15 do
 						if not alive then
 							return
 						end
-						if resolvePlayerBase() then break end
-						task.wait(1)
+						if resolvePlayerBase() then
+							break
+						end
+						task.wait(0.5)
 					end
 				end
 				if not alive then
 					return
 				end
-				doClaim()
+				for _ = 1, 6 do
+					if doClaim() then
+						break
+					end
+					resolvePlayerBase()
+					task.wait(0.5)
+				end
 				CONFIG._lastClaim = os.clock()
 				refreshStatus()
 			end)
