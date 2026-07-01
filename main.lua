@@ -93,8 +93,6 @@ local function run()
 		PostFinishWait = 0.25,
 		StartArg = 0,
 		ClaimDelay = 60.0,
-		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
-		StartupPlotWait = 3,
 		_lastClaim = 0,
 	}
 
@@ -161,7 +159,7 @@ local function run()
 	CloseBtn.Font = Enum.Font.GothamBold
 	CloseBtn.TextSize = 14
 	CloseBtn.TextColor3 = THEME.mutedForeground
-	CloseBtn.Text = "×"
+	CloseBtn.Text = "├ù"
 	CloseBtn.Parent = TopBar
 	corner(CloseBtn, THEME.radiusSm)
 	stroke(CloseBtn, THEME.border)
@@ -963,112 +961,18 @@ local function run()
 		return nil
 	end
 
-	local function resolveGuiPath(root, path)
-		local current = root
-		for _, name in ipairs(path) do
-			current = current and current:FindFirstChild(name)
-		end
-		return current
+	local function doStart()
+		if not StartRemote then StartRemote = getBombRE("Start") end
+		if not StartRemote then return false end
+		StartRemote:FireServer(CONFIG.StartArg)
+		return true
 	end
 
-	local function findPlotClickable(node)
-		if not node then
-			return nil
-		end
-		if node:IsA("GuiButton") then
-			return node
-		end
-		local cur = node
-		while cur do
-			if cur:IsA("GuiButton") then
-				return cur
-			end
-			cur = cur.Parent
-		end
-		for _, desc in ipairs(node:GetDescendants()) do
-			if desc:IsA("GuiButton") then
-				return desc
-			end
-		end
-		return nil
-	end
-
-	local function pressGuiOnce(btn)
-		if not btn or not btn:IsA("GuiButton") then
-			return false
-		end
-		if getconnections then
-			for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-				if conn.Function then
-					pcall(conn.Function)
-					return true
-				end
-			end
-			if btn.Activated then
-				for _, conn in ipairs(getconnections(btn.Activated)) do
-					if conn.Function then
-						pcall(conn.Function)
-						return true
-					end
-				end
-			end
-		end
-		if firesignal then
-			pcall(firesignal, btn.MouseButton1Click)
-			return true
-		end
-		return false
-	end
-
-	local function getPlotGuiButton()
-		local pg = LocalPlayer:FindFirstChild("PlayerGui")
-		local target = pg and resolveGuiPath(pg, CONFIG.PlotButtonPath)
-		if not target then
-			target = resolveGuiPath(game:GetService("StarterGui"), CONFIG.PlotButtonPath)
-		end
-		return findPlotClickable(target)
-	end
-
-	local function plotButtonHasHandler()
-		local btn = getPlotGuiButton()
-		if not btn or not getconnections then
-			return false
-		end
-		for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-			if conn.Function then
-				return true
-			end
-		end
-		return false
-	end
-
-	local function pressPlotButton(requireHandler)
-		local btn = getPlotGuiButton()
-		if not btn then
-			return false
-		end
-		if requireHandler and not plotButtonHasHandler() then
-			return false
-		end
-		return pressGuiOnce(btn)
-	end
-
-	local function waitForSendTagDataRemote(maxSeconds)
-		local deadline = os.clock() + maxSeconds
-		while os.clock() < deadline do
-			if not alive then
-				return nil
-			end
-			local src = ReplicatedStorage:FindFirstChild("src")
-			if src then
-				SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
-				if SendTagDataRemote then
-					return SendTagDataRemote
-				end
-			end
-			task.wait(0.25)
-		end
-		return SendTagDataRemote
+	local function doThrow()
+		if not ThrowRemote then ThrowRemote = getBombRE("Throw") end
+		if not ThrowRemote then return false end
+		ThrowRemote:FireServer(THROW_POWER)
+		return true
 	end
 
 	local function doClaim()
@@ -1085,76 +989,6 @@ local function run()
 			return false
 		end
 		SendTagDataRemote:FireServer("Collect", target, "collectCash")
-		return true
-	end
-
-	local function claimOnceWithRetry()
-		waitForSendTagDataRemote(20)
-		getBasesFolder(15)
-		for _ = 1, 15 do
-			if not alive then
-				return false
-			end
-			if resolvePlayerBase() then
-				break
-			end
-			task.wait(0.5)
-		end
-		for _ = 1, 8 do
-			if not alive then
-				return false
-			end
-			if doClaim() then
-				return true
-			end
-			resolvePlayerBase()
-			task.wait(0.5)
-		end
-		return false
-	end
-
-	local function performInitialClaim()
-		claimOnceWithRetry()
-		CONFIG._lastClaim = os.clock()
-	end
-
-	local function startupSilentAutoClaim()
-		if not alive then
-			return
-		end
-
-		LocalPlayer:WaitForChild("PlayerGui", 15)
-		ReplicatedStorage:WaitForChild("src", 20)
-
-		for _ = 1, 40 do
-			if not alive then
-				return
-			end
-			if pressPlotButton(true) then
-				break
-			end
-			task.wait(0.25)
-		end
-
-		task.wait(CONFIG.StartupPlotWait)
-
-		claiming = true
-		CONFIG._lastClaim = os.clock()
-		performInitialClaim()
-		claiming = false
-	end
-
-	local function doStart()
-		if not StartRemote then StartRemote = getBombRE("Start") end
-		if not StartRemote then return false end
-		StartRemote:FireServer(CONFIG.StartArg)
-		return true
-	end
-
-	local function doThrow()
-		if not ThrowRemote then ThrowRemote = getBombRE("Throw") end
-		if not ThrowRemote then return false end
-		ThrowRemote:FireServer(THROW_POWER)
 		return true
 	end
 
@@ -1261,8 +1095,21 @@ local function run()
 		claiming = not claiming
 		if claiming then
 			task.spawn(function()
+				getBasesFolder(15)
+				if not cachedBaseName then
+					for _ = 1, 10 do
+						if not alive then
+							return
+						end
+						if resolvePlayerBase() then break end
+						task.wait(1)
+					end
+				end
+				if not alive then
+					return
+				end
+				doClaim()
 				CONFIG._lastClaim = os.clock()
-				performInitialClaim()
 				refreshStatus()
 			end)
 		end
@@ -1332,8 +1179,6 @@ local function run()
 			setLearnedBase(base.Name)
 		end
 	end))
-
-	task.spawn(startupSilentAutoClaim)
 
 	refreshStatus()
 end
