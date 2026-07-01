@@ -974,6 +974,40 @@ local function run()
 		return true
 	end
 
+	local function doClaim()
+		if not alive then
+			return false
+		end
+		if not SendTagDataRemote then
+			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
+		end
+		local bases = getBasesFolder()
+		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
+		local target = base and getCollectInBase(base)
+		if not SendTagDataRemote or not target then
+			return false
+		end
+		SendTagDataRemote:FireServer("Collect", target, "collectCash")
+		return true
+	end
+
+	local function doEquipBest()
+		if not alive or not farming or not equipBest then
+			return false
+		end
+		if not SendTagDataRemote then
+			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
+		end
+		local bases = getBasesFolder()
+		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
+		local aquarium = base and getAquariumInBase(base)
+		if not SendTagDataRemote or not aquarium then
+			return false
+		end
+		SendTagDataRemote:FireServer("Aquarium", aquarium, "equipBest")
+		return true
+	end
+
 	local function doFarmCycle()
 		if not alive or not farming then
 			return
@@ -1016,39 +1050,6 @@ local function run()
 			end
 			farmLoopRunning = false
 		end)
-	end
-	local function doClaim()
-		if not alive then
-			return false
-		end
-		if not SendTagDataRemote then
-			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
-		end
-		local bases = getBasesFolder()
-		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
-		local target = base and getCollectInBase(base)
-		if not SendTagDataRemote or not target then
-			return false
-		end
-		SendTagDataRemote:FireServer("Collect", target, "collectCash")
-		return true
-	end
-
-	local function doEquipBest()
-		if not alive or not farming or not equipBest then
-			return false
-		end
-		if not SendTagDataRemote then
-			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
-		end
-		local bases = getBasesFolder()
-		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
-		local aquarium = base and getAquariumInBase(base)
-		if not SendTagDataRemote or not aquarium then
-			return false
-		end
-		SendTagDataRemote:FireServer("Aquarium", aquarium, "equipBest")
-		return true
 	end
 
 	local function setBadge(on, badge, badgeText, badgeStroke)
