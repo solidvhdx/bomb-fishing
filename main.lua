@@ -86,6 +86,17 @@ local function run()
 
 	local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
+	if _G.__BombFishingFarmShutdown then
+		pcall(_G.__BombFishingFarmShutdown)
+	end
+
+	local SCRIPT_ID = tick()
+	_G.__BombFishingFarmActiveId = SCRIPT_ID
+
+	local function isActiveScript()
+		return _G.__BombFishingFarmActiveId == SCRIPT_ID and alive
+	end
+
 	local CONFIG = {
 		AfterStartWait = 0.5,
 		RoundWait = 12,
@@ -110,6 +121,7 @@ local function run()
 	local farmCycleBusy = false
 	local lastRebirthFire = 0
 	local lastRebirthPoll = 0
+	local rebirthSystemsReady = false
 	local dataReplica = nil
 	local RebirthServiceClient = nil
 	local GameConfig = nil
@@ -446,7 +458,13 @@ local function run()
 		if ScreenGui.Parent then
 			ScreenGui:Destroy()
 		end
+		if _G.__BombFishingFarmActiveId == SCRIPT_ID then
+			_G.__BombFishingFarmActiveId = nil
+		end
+		_G.__BombFishingFarmShutdown = nil
 	end
+
+	_G.__BombFishingFarmShutdown = shutdownScript
 
 	local function showCloseConfirm()
 		ConfirmOverlay.Visible = true
@@ -1123,7 +1141,10 @@ local function run()
 	end
 
 	local function tryAutoRebirth()
-		if not alive or not autoRebirth then
+		if not isActiveScript() then
+			return false
+		end
+		if not autoRebirth then
 			return false
 		end
 		if farmCycleBusy then
@@ -1147,6 +1168,9 @@ local function run()
 	end
 
 	local function refreshRebirthRow()
+		if not isActiveScript() then
+			return
+		end
 		local row = toggleRows["Auto Rebirth"]
 		if not row then
 			return
@@ -1224,7 +1248,14 @@ local function run()
 			return
 		end
 
-		refreshRebirthRow()
+		rebirthSystemsReady = true
+	end
+
+	local function ensureRebirthSystems()
+		if rebirthSystemsReady then
+			return
+		end
+		task.spawn(setupRebirthSystems)
 	end
 
 	local function doFarmCycle()
@@ -1312,7 +1343,11 @@ local function run()
 		setRowActive("Auto Claim Cage", claimCage)
 		setRowActive("Auto Equip Best", equipBest)
 		setRowActive("Auto Sell Inventory", autoSell)
-		refreshRebirthRow()
+		if autoRebirth then
+			refreshRebirthRow()
+		else
+			setRowActive("Auto Rebirth", false)
+		end
 	end
 
 	local function toggleAutoClaim()
@@ -1372,6 +1407,9 @@ local function run()
 
 	RebirthBtn.MouseButton1Click:Connect(function()
 		autoRebirth = not autoRebirth
+		if autoRebirth then
+			ensureRebirthSystems()
+		end
 		refreshStatus()
 		if autoRebirth then
 			tryAutoRebirth()
@@ -1402,7 +1440,7 @@ local function run()
 			CONFIG._lastCageClaim = now
 			doClaimCage()
 		end
-		if autoRebirth and now - lastRebirthPoll >= CONFIG.RebirthPollInterval then
+		if autoRebirth and rebirthSystemsReady and now - lastRebirthPoll >= CONFIG.RebirthPollInterval then
 			lastRebirthPoll = now
 			refreshRebirthRow()
 			tryAutoRebirth()
@@ -1421,7 +1459,6 @@ local function run()
 	end))
 
 	task.spawn(startupPlotAndClaim)
-	task.spawn(setupRebirthSystems)
 
 	refreshStatus()
 end
