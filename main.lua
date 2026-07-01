@@ -93,8 +93,6 @@ local function run()
 		PostFinishWait = 0.25,
 		StartArg = 0,
 		ClaimDelay = 60.0,
-		PlotButtonPath = { "MainScreen", "TopScreen", "Plot", "Button" },
-		StartupPlotWait = 1,
 		_lastClaim = 0,
 	}
 
@@ -963,98 +961,6 @@ local function run()
 		return nil
 	end
 
-	local function resolveGuiPath(root, path)
-		local current = root
-		for _, name in ipairs(path) do
-			current = current and current:FindFirstChild(name)
-		end
-		return current
-	end
-
-	local function clickGuiButton(btn)
-		if not btn then return false end
-		if firesignal then
-			firesignal(btn.MouseButton1Click)
-			if btn.Activated then firesignal(btn.Activated) end
-			return true
-		end
-		if getconnections then
-			for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-				if conn.Function then conn:Function() end
-			end
-			return true
-		end
-		return false
-	end
-
-	local function getPlotButton()
-		local pg = LocalPlayer:FindFirstChild("PlayerGui")
-		if not pg then return nil end
-		local btn = resolveGuiPath(pg, CONFIG.PlotButtonPath)
-		if btn and btn:IsA("GuiButton") then return btn end
-		return nil
-	end
-
-	local function findTopbarPlusModule()
-		for _, inst in ipairs(ReplicatedStorage:GetDescendants()) do
-			if inst:IsA("ModuleScript") and (inst.Name == "Icon" or inst.Name == "TopbarPlus") then
-				return inst
-			end
-		end
-		return nil
-	end
-
-	local function selectTopbarPlotIcon()
-		local mod = findTopbarPlusModule()
-		if not mod then
-			return false
-		end
-		local ok, Icon = pcall(require, mod)
-		if not ok or type(Icon) ~= "table" or type(Icon.getIcon) ~= "function" then
-			return false
-		end
-
-		for _, name in ipairs({ "Plot", "plot", "Base", "Home" }) do
-			local got, icon = pcall(function()
-				return Icon.getIcon(name)
-			end)
-			if got and icon and type(icon.select) == "function" then
-				pcall(function()
-					icon:select()
-				end)
-				return true
-			end
-		end
-
-		if type(Icon.getIcons) == "function" then
-			local got, icons = pcall(function()
-				return Icon.getIcons()
-			end)
-			if got and type(icons) == "table" then
-				for _, icon in pairs(icons) do
-					local label = icon.name or icon.Name or icon.label
-					if type(label) == "string" and (string.find(string.lower(label), "plot") or string.find(string.lower(label), "base")) then
-						if type(icon.select) == "function" then
-							pcall(function()
-								icon:select()
-							end)
-							return true
-						end
-					end
-				end
-			end
-		end
-
-		return false
-	end
-
-	local function pressPlotButton()
-		if selectTopbarPlotIcon() then
-			return true
-		end
-		return clickGuiButton(getPlotButton())
-	end
-
 	local function doStart()
 		if not StartRemote then StartRemote = getBombRE("Start") end
 		if not StartRemote then return false end
@@ -1101,28 +1007,6 @@ local function run()
 		end
 		SendTagDataRemote:FireServer("Aquarium", aquarium, "equipBest")
 		return true
-	end
-
-	local function cachePlotOnStartup()
-		if not alive then
-			return
-		end
-
-		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
-		getBasesFolder()
-
-		if not pressPlotButton() then
-			task.wait(0.5)
-			pressPlotButton()
-		end
-		task.wait(CONFIG.StartupPlotWait)
-
-		if not alive then
-			return
-		end
-		resolvePlayerBase()
-		doClaim()
-		resolvePlayerBase()
 	end
 
 	local function doFarmCycle()
@@ -1295,8 +1179,6 @@ local function run()
 			setLearnedBase(base.Name)
 		end
 	end))
-
-	task.spawn(cachePlotOnStartup)
 
 	refreshStatus()
 end
