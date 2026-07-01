@@ -1031,19 +1031,29 @@ local function run()
 		if not FinishedRemote then
 			return
 		end
-		if not hookfunction then
-			return
-		end
-		pcall(function()
-			local orig
-			orig = hookfunction(FinishedRemote.FireServer, function(self, ...)
-				if rawequal(self, FinishedRemote) then
-					roundFinished = true
-				end
-				return orig(self, ...)
+		if hookmetamethod then
+			pcall(function()
+				local orig
+				orig = hookmetamethod(game, "__namecall", function(self, ...)
+					if rawequal(self, FinishedRemote) and getnamecallmethod() == "FireServer" then
+						roundFinished = true
+					end
+					return orig(self, ...)
+				end)
+				finishedHookInstalled = orig ~= nil
 			end)
-		end)
-		finishedHookInstalled = true
+		elseif hookfunction then
+			pcall(function()
+				local orig
+				orig = hookfunction(FinishedRemote.FireServer, function(self, ...)
+					if rawequal(self, FinishedRemote) then
+						roundFinished = true
+					end
+					return orig(self, ...)
+				end)
+				finishedHookInstalled = orig ~= nil
+			end)
+		end
 	end
 
 	local function waitForRoundFinished()
