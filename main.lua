@@ -995,7 +995,63 @@ local function run()
 		return nil
 	end
 
+	local function findTopbarPlusModule()
+		for _, inst in ipairs(ReplicatedStorage:GetDescendants()) do
+			if inst:IsA("ModuleScript") and (inst.Name == "Icon" or inst.Name == "TopbarPlus") then
+				return inst
+			end
+		end
+		return nil
+	end
+
+	local function selectTopbarPlotIcon()
+		local mod = findTopbarPlusModule()
+		if not mod then
+			return false
+		end
+		local ok, Icon = pcall(require, mod)
+		if not ok or type(Icon) ~= "table" or type(Icon.getIcon) ~= "function" then
+			return false
+		end
+
+		for _, name in ipairs({ "Plot", "plot", "Base", "Home" }) do
+			local got, icon = pcall(function()
+				return Icon.getIcon(name)
+			end)
+			if got and icon and type(icon.select) == "function" then
+				pcall(function()
+					icon:select()
+				end)
+				return true
+			end
+		end
+
+		if type(Icon.getIcons) == "function" then
+			local got, icons = pcall(function()
+				return Icon.getIcons()
+			end)
+			if got and type(icons) == "table" then
+				for _, icon in pairs(icons) do
+					local label = icon.name or icon.Name or icon.label
+					if type(label) == "string" and (string.find(string.lower(label), "plot") or string.find(string.lower(label), "base")) then
+						if type(icon.select) == "function" then
+							pcall(function()
+								icon:select()
+							end)
+							return true
+						end
+					end
+				end
+			end
+		end
+
+		return false
+	end
+
 	local function pressPlotButton()
+		if selectTopbarPlotIcon() then
+			return true
+		end
 		return clickGuiButton(getPlotButton())
 	end
 
@@ -1053,12 +1109,18 @@ local function run()
 		end
 
 		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
-		pressPlotButton()
+		getBasesFolder()
+
+		if not pressPlotButton() then
+			task.wait(0.5)
+			pressPlotButton()
+		end
 		task.wait(CONFIG.StartupPlotWait)
 
 		if not alive then
 			return
 		end
+		resolvePlayerBase()
 		doClaim()
 		resolvePlayerBase()
 	end
