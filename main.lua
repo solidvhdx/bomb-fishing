@@ -93,6 +93,7 @@ local function run()
 		StartArg = 0,
 		ClaimDelay = 60.0,
 		CageClaimDelay = 120.0,
+		RebirthPollInterval = 0.5,
 		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
 		_lastClaim = 0,
 		_lastCageClaim = 0,
@@ -108,6 +109,7 @@ local function run()
 	local farmGeneration = 0
 	local farmCycleBusy = false
 	local lastRebirthFire = 0
+	local lastRebirthPoll = 0
 	local dataReplica = nil
 	local RebirthServiceClient = nil
 	local GameConfig = nil
@@ -1179,18 +1181,6 @@ local function run()
 		end
 	end
 
-	local function scheduleRebirthUpdate(tryRebirth)
-		task.defer(function()
-			if not alive then
-				return
-			end
-			refreshRebirthRow()
-			if tryRebirth then
-				tryAutoRebirth()
-			end
-		end)
-	end
-
 	local function setupRebirthSystems()
 		loadGameConfig()
 		ReplicatedStorage:WaitForChild("src", 30)
@@ -1234,12 +1224,6 @@ local function run()
 			return
 		end
 
-		dataReplica:OnSet({ "Cash" }, function()
-			scheduleRebirthUpdate(true)
-		end)
-		dataReplica:OnSet({ "Rebirth" }, function()
-			scheduleRebirthUpdate(false)
-		end)
 		refreshRebirthRow()
 	end
 
@@ -1417,6 +1401,11 @@ local function run()
 		if claimCage and now - CONFIG._lastCageClaim >= CONFIG.CageClaimDelay then
 			CONFIG._lastCageClaim = now
 			doClaimCage()
+		end
+		if autoRebirth and now - lastRebirthPoll >= CONFIG.RebirthPollInterval then
+			lastRebirthPoll = now
+			refreshRebirthRow()
+			tryAutoRebirth()
 		end
 	end))
 
