@@ -1048,23 +1048,17 @@ local function run()
 	end
 
 	local function cachePlotOnStartup()
-		if not alive then return end
-
-		ReplicatedStorage:WaitForChild("src", 30)
-		getBasesFolder(60)
-		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
-
-		LocalPlayer:WaitForChild("PlayerGui", 30)
-		for _ = 1, 30 do
-			if not alive then return end
-			if getPlotButton() then break end
-			task.wait(1)
+		if not alive then
+			return
 		end
 
+		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
 		pressPlotButton()
 		task.wait(CONFIG.StartupPlotWait)
 
-		if not alive then return end
+		if not alive then
+			return
+		end
 		doClaim()
 		resolvePlayerBase()
 	end
