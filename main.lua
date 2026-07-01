@@ -1095,20 +1095,28 @@ local function run()
 		claiming = not claiming
 		if claiming then
 			task.spawn(function()
+				ReplicatedStorage:WaitForChild("src", 20)
+				SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
 				getBasesFolder(15)
-				if not cachedBaseName then
-					for _ = 1, 10 do
-						if not alive then
-							return
-						end
-						if resolvePlayerBase() then break end
-						task.wait(1)
+				for _ = 1, 15 do
+					if not alive then
+						return
 					end
+					if resolvePlayerBase() then
+						break
+					end
+					task.wait(0.5)
 				end
-				if not alive then
-					return
+				for _ = 1, 6 do
+					if not alive then
+						return
+					end
+					if doClaim() then
+						break
+					end
+					resolvePlayerBase()
+					task.wait(0.5)
 				end
-				doClaim()
 				CONFIG._lastClaim = os.clock()
 				refreshStatus()
 			end)
