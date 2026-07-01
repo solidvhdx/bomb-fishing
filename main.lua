@@ -31,20 +31,32 @@ local THROW_POWER = 1.0
 local TOGGLE_KEY = Enum.KeyCode.V
 local HOTKEY_LABEL = "V"
 local THEME = {
-	background = Color3.fromRGB(10, 10, 10),
-	foreground = Color3.fromRGB(250, 250, 250),
-	card = Color3.fromRGB(23, 23, 23),
-	mutedForeground = Color3.fromRGB(161, 161, 170),
-	border = Color3.fromRGB(38, 38, 38),
-	secondary = Color3.fromRGB(38, 38, 38),
-	secondaryForeground = Color3.fromRGB(250, 250, 250),
-	accent = Color3.fromRGB(38, 38, 38),
-	sidebar = Color3.fromRGB(23, 23, 23),
-	sidebarAccent = Color3.fromRGB(38, 38, 38),
+	background = Color3.fromRGB(6, 9, 15),
+	backgroundAlt = Color3.fromRGB(10, 15, 24),
+	foreground = Color3.fromRGB(244, 247, 255),
+	foregroundSoft = Color3.fromRGB(226, 232, 240),
+	card = Color3.fromRGB(15, 23, 36),
+	cardElevated = Color3.fromRGB(19, 30, 46),
+	cardHover = Color3.fromRGB(23, 36, 56),
+	cardActive = Color3.fromRGB(25, 43, 68),
+	mutedForeground = Color3.fromRGB(141, 158, 182),
+	border = Color3.fromRGB(43, 57, 80),
+	borderSoft = Color3.fromRGB(30, 41, 59),
+	secondary = Color3.fromRGB(17, 24, 39),
+	secondaryForeground = Color3.fromRGB(236, 242, 255),
+	accent = Color3.fromRGB(96, 165, 250),
+	accentSoft = Color3.fromRGB(30, 41, 59),
+	accentGlow = Color3.fromRGB(59, 130, 246),
+	sidebar = Color3.fromRGB(11, 18, 29),
+	sidebarAccent = Color3.fromRGB(28, 43, 68),
 	destructive = Color3.fromRGB(248, 113, 113),
+	destructiveSurface = Color3.fromRGB(61, 21, 29),
 	success = Color3.fromRGB(74, 222, 128),
-	radius = 10,
-	radiusSm = 6,
+	successSurface = Color3.fromRGB(18, 52, 41),
+	shadow = Color3.fromRGB(2, 6, 12),
+	radius = 18,
+	radiusSm = 12,
+	radiusXs = 8,
 }
 
 local function corner(parent, radius)
@@ -61,6 +73,17 @@ local function stroke(parent, color, thickness)
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.Parent = parent
 	return s
+end
+
+local function gradient(parent, rotation, colors, transparency)
+	local g = Instance.new("UIGradient")
+	g.Rotation = rotation or 0
+	g.Color = colors
+	if transparency then
+		g.Transparency = transparency
+	end
+	g.Parent = parent
+	return g
 end
 
 local function padding(parent, t, r, b, l)
@@ -165,61 +188,216 @@ local function run()
 	mountGui(ScreenGui, LocalPlayer)
 
 	local HEADER_H = 40
-	local FOOTER_H = 26
+	local FOOTER_H = 44
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(300, 354)
-	Root.Position = UDim2.new(0, 24, 0.15, 0)
-	Root.BackgroundColor3 = THEME.background
+	Root.Size = UDim2.fromOffset(452, 774)
+	Root.Position = UDim2.new(0, 24, 0.04, 0)
+	Root.BackgroundTransparency = 1
 	Root.BorderSizePixel = 0
 	Root.Active = true
-	Root.ClipsDescendants = true
+	Root.ClipsDescendants = false
 	Root.Parent = ScreenGui
-	corner(Root, THEME.radius)
 
+	local RootShadow = Instance.new("Frame")
+	RootShadow.Name = "RootShadow"
+	RootShadow.Size = UDim2.new(1, 18, 1, 20)
+	RootShadow.Position = UDim2.fromOffset(8, 10)
+	RootShadow.BackgroundColor3 = THEME.shadow
+	RootShadow.BackgroundTransparency = 0.3
+	RootShadow.BorderSizePixel = 0
+	RootShadow.ZIndex = 0
+	RootShadow.Parent = Root
+	corner(RootShadow, THEME.radius + 4)
+	gradient(
+		RootShadow,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 13, 20)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(2, 5, 10)),
+		}),
+		NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.15),
+			NumberSequenceKeypoint.new(1, 0.5),
+		})
+	)
+
+	local RootShell = Instance.new("Frame")
+	RootShell.Name = "RootShell"
+	RootShell.Size = UDim2.fromScale(1, 1)
+	RootShell.BackgroundColor3 = THEME.background
+	RootShell.BorderSizePixel = 0
+	RootShell.ZIndex = 1
+	RootShell.Parent = Root
+	corner(RootShell, THEME.radius)
+	stroke(RootShell, THEME.border)
+	gradient(
+		RootShell,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, THEME.backgroundAlt),
+			ColorSequenceKeypoint.new(0.45, THEME.background),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 8, 14)),
+		})
+	)
+
+	local RootHighlight = Instance.new("Frame")
+	RootHighlight.Name = "RootHighlight"
+	RootHighlight.Size = UDim2.new(1, -2, 0, 154)
+	RootHighlight.Position = UDim2.fromOffset(1, 1)
+	RootHighlight.BackgroundColor3 = THEME.accent
+	RootHighlight.BackgroundTransparency = 0.82
+	RootHighlight.BorderSizePixel = 0
+	RootHighlight.ZIndex = 1
+	RootHighlight.Parent = RootShell
+	corner(RootHighlight, THEME.radius)
+	gradient(
+		RootHighlight,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(96, 165, 250)),
+			ColorSequenceKeypoint.new(0.6, Color3.fromRGB(56, 189, 248)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 23, 42)),
+		}),
+		NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.55),
+			NumberSequenceKeypoint.new(0.6, 0.82),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+	)
+
+	HEADER_H = 120
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
 	TopBar.Size = UDim2.new(1, 0, 0, HEADER_H)
-	TopBar.BackgroundColor3 = THEME.sidebar
+	TopBar.BackgroundTransparency = 1
 	TopBar.BorderSizePixel = 0
-	TopBar.Parent = Root
+	TopBar.ZIndex = 2
+	TopBar.Parent = RootShell
 
-	local TopBarBorder = Instance.new("Frame")
-	TopBarBorder.Size = UDim2.new(1, 0, 0, 1)
-	TopBarBorder.Position = UDim2.new(0, 0, 1, -1)
-	TopBarBorder.BackgroundColor3 = THEME.border
-	TopBarBorder.BorderSizePixel = 0
-	TopBarBorder.Parent = TopBar
+	local TopBarDivider = Instance.new("Frame")
+	TopBarDivider.Size = UDim2.new(1, -28, 0, 1)
+	TopBarDivider.Position = UDim2.new(0, 14, 1, -1)
+	TopBarDivider.BackgroundColor3 = THEME.borderSoft
+	TopBarDivider.BorderSizePixel = 0
+	TopBarDivider.ZIndex = 2
+	TopBarDivider.Parent = TopBar
+
+	local HeaderBadge = Instance.new("Frame")
+	HeaderBadge.Name = "HeaderBadge"
+	HeaderBadge.Size = UDim2.fromOffset(82, 24)
+	HeaderBadge.Position = UDim2.fromOffset(18, 18)
+	HeaderBadge.BackgroundColor3 = THEME.accentSoft
+	HeaderBadge.BorderSizePixel = 0
+	HeaderBadge.ZIndex = 3
+	HeaderBadge.Parent = TopBar
+	corner(HeaderBadge, THEME.radiusXs)
+	stroke(HeaderBadge, THEME.border)
+	gradient(
+		HeaderBadge,
+		0,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 34, 54)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 27, 43)),
+		})
+	)
+
+	local HeaderBadgeText = Instance.new("TextLabel")
+	HeaderBadgeText.Size = UDim2.fromScale(1, 1)
+	HeaderBadgeText.BackgroundTransparency = 1
+	HeaderBadgeText.Font = Enum.Font.GothamBold
+	HeaderBadgeText.TextSize = 10
+	HeaderBadgeText.TextColor3 = THEME.foregroundSoft
+	HeaderBadgeText.Text = "SHADCN"
+	HeaderBadgeText.ZIndex = 4
+	HeaderBadgeText.Parent = HeaderBadge
 
 	local TopTitle = Instance.new("TextLabel")
-	TopTitle.Size = UDim2.new(1, -48, 1, 0)
-	TopTitle.Position = UDim2.fromOffset(14, 0)
+	TopTitle.Size = UDim2.new(1, -88, 0, 26)
+	TopTitle.Position = UDim2.fromOffset(18, 50)
 	TopTitle.BackgroundTransparency = 1
-	TopTitle.Font = Enum.Font.GothamSemibold
-	TopTitle.TextSize = 14
+	TopTitle.Font = Enum.Font.GothamBold
+	TopTitle.TextSize = 22
 	TopTitle.TextXAlignment = Enum.TextXAlignment.Left
 	TopTitle.TextColor3 = THEME.foreground
-	TopTitle.Text = "Bomb Fishing"
+	TopTitle.Text = "Bomb Fishing Control"
+	TopTitle.ZIndex = 3
 	TopTitle.Parent = TopBar
 
+	local HeaderSubtitle = Instance.new("TextLabel")
+	HeaderSubtitle.Size = UDim2.new(1, -120, 0, 34)
+	HeaderSubtitle.Position = UDim2.fromOffset(18, 78)
+	HeaderSubtitle.BackgroundTransparency = 1
+	HeaderSubtitle.Font = Enum.Font.Gotham
+	HeaderSubtitle.TextSize = 12
+	HeaderSubtitle.TextWrapped = true
+	HeaderSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+	HeaderSubtitle.TextYAlignment = Enum.TextYAlignment.Top
+	HeaderSubtitle.TextColor3 = THEME.mutedForeground
+	HeaderSubtitle.Text = "Every toggle keeps the same logic, remotes, and timing. Only the shell gets rebuilt."
+	HeaderSubtitle.ZIndex = 3
+	HeaderSubtitle.Parent = TopBar
+
+	local HeaderStatus = Instance.new("Frame")
+	HeaderStatus.Name = "HeaderStatus"
+	HeaderStatus.Size = UDim2.fromOffset(106, 28)
+	HeaderStatus.AnchorPoint = Vector2.new(1, 0)
+	HeaderStatus.Position = UDim2.new(1, -86, 0, 18)
+	HeaderStatus.BackgroundColor3 = THEME.successSurface
+	HeaderStatus.BorderSizePixel = 0
+	HeaderStatus.ZIndex = 3
+	HeaderStatus.Parent = TopBar
+	corner(HeaderStatus, THEME.radiusXs)
+	stroke(HeaderStatus, Color3.fromRGB(34, 85, 62))
+
+	local HeaderStatusDot = Instance.new("Frame")
+	HeaderStatusDot.Size = UDim2.fromOffset(8, 8)
+	HeaderStatusDot.Position = UDim2.fromOffset(12, 10)
+	HeaderStatusDot.BackgroundColor3 = THEME.success
+	HeaderStatusDot.BorderSizePixel = 0
+	HeaderStatusDot.ZIndex = 4
+	HeaderStatusDot.Parent = HeaderStatus
+	corner(HeaderStatusDot, 99)
+
+	local HeaderStatusText = Instance.new("TextLabel")
+	HeaderStatusText.Size = UDim2.new(1, -28, 1, 0)
+	HeaderStatusText.Position = UDim2.fromOffset(24, 0)
+	HeaderStatusText.BackgroundTransparency = 1
+	HeaderStatusText.Font = Enum.Font.GothamSemibold
+	HeaderStatusText.TextSize = 11
+	HeaderStatusText.TextXAlignment = Enum.TextXAlignment.Left
+	HeaderStatusText.TextColor3 = THEME.success
+	HeaderStatusText.Text = "Stable"
+	HeaderStatusText.ZIndex = 4
+	HeaderStatusText.Parent = HeaderStatus
+
 	local CloseBtn = Instance.new("TextButton")
-	CloseBtn.Size = UDim2.fromOffset(28, 28)
-	CloseBtn.Position = UDim2.new(1, -36, 0.5, -14)
+	CloseBtn.Size = UDim2.fromOffset(32, 32)
+	CloseBtn.Position = UDim2.new(1, -44, 0, 16)
 	CloseBtn.BackgroundColor3 = THEME.secondary
 	CloseBtn.BorderSizePixel = 0
 	CloseBtn.AutoButtonColor = false
 	CloseBtn.Font = Enum.Font.GothamBold
-	CloseBtn.TextSize = 14
+	CloseBtn.TextSize = 13
 	CloseBtn.TextColor3 = THEME.mutedForeground
 	CloseBtn.Text = "X"
+	CloseBtn.ZIndex = 4
 	CloseBtn.Parent = TopBar
 	corner(CloseBtn, THEME.radiusSm)
 	stroke(CloseBtn, THEME.border)
+	gradient(
+		CloseBtn,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 27, 42)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 20, 31)),
+		})
+	)
 
 	CloseBtn.MouseEnter:Connect(function()
 		TweenService:Create(CloseBtn, TweenInfo.new(0.12), {
-			BackgroundColor3 = THEME.accent,
+			BackgroundColor3 = THEME.cardHover,
 			TextColor3 = THEME.foreground,
 		}):Play()
 	end)
@@ -234,32 +412,124 @@ local function run()
 	Body.Name = "Body"
 	Body.Size = UDim2.new(1, 0, 1, -(HEADER_H + FOOTER_H))
 	Body.Position = UDim2.fromOffset(0, HEADER_H)
-	Body.BackgroundColor3 = THEME.background
+	Body.BackgroundTransparency = 1
 	Body.BorderSizePixel = 0
 	Body.ClipsDescendants = true
 	Body.ZIndex = 2
-	Body.Parent = Root
+	Body.Parent = RootShell
 
 	local ListPad = Instance.new("Frame")
 	ListPad.Size = UDim2.new(1, 0, 1, 0)
 	ListPad.BackgroundTransparency = 1
+	ListPad.BorderSizePixel = 0
 	ListPad.Parent = Body
-	padding(ListPad, 8, 10, 8, 10)
+	padding(ListPad, 12, 14, 10, 14)
 
 	local ListLayout = Instance.new("UIListLayout")
-	ListLayout.Padding = UDim.new(0, 4)
+	ListLayout.Padding = UDim.new(0, 8)
 	ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	ListLayout.Parent = ListPad
 
 	local toggleRows = {}
+	local rowDescriptions = {
+		["Auto Farm"] = "Loop the fishing cycle continuously.",
+		["Auto Claim Money"] = "Collect cash from your base on schedule.",
+		["Auto Claim Cage"] = "Claim fish from the cage bridge timer.",
+		["Auto Equip Best"] = "Equip the strongest available fish setup.",
+		["Auto Sell Inventory"] = "Sell inventory after each completed round.",
+		["Auto Rebirth"] = "Watch rebirth progress and fire when ready.",
+		["No 3D Render"] = "Disable 3D rendering for lighter runtime load.",
+		["Anti AFK"] = "Prevent idle kick while the script stays active.",
+	}
+
+	local HeroCard = Instance.new("Frame")
+	HeroCard.Name = "HeroCard"
+	HeroCard.LayoutOrder = 1
+	HeroCard.Size = UDim2.new(1, 0, 0, 80)
+	HeroCard.BackgroundColor3 = THEME.cardElevated
+	HeroCard.BorderSizePixel = 0
+	HeroCard.Parent = ListPad
+	corner(HeroCard, THEME.radiusSm)
+	stroke(HeroCard, THEME.border)
+	gradient(
+		HeroCard,
+		0,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 31, 47)),
+			ColorSequenceKeypoint.new(0.55, Color3.fromRGB(16, 25, 39)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 20, 31)),
+		})
+	)
+
+	local HeroStripe = Instance.new("Frame")
+	HeroStripe.Size = UDim2.new(0, 4, 1, -24)
+	HeroStripe.Position = UDim2.fromOffset(14, 12)
+	HeroStripe.BackgroundColor3 = THEME.accent
+	HeroStripe.BorderSizePixel = 0
+	HeroStripe.Parent = HeroCard
+	corner(HeroStripe, 99)
+
+	local HeroTitle = Instance.new("TextLabel")
+	HeroTitle.Size = UDim2.new(1, -146, 0, 20)
+	HeroTitle.Position = UDim2.fromOffset(28, 14)
+	HeroTitle.BackgroundTransparency = 1
+	HeroTitle.Font = Enum.Font.GothamSemibold
+	HeroTitle.TextSize = 14
+	HeroTitle.TextXAlignment = Enum.TextXAlignment.Left
+	HeroTitle.TextColor3 = THEME.foreground
+	HeroTitle.Text = "Automation Suite"
+	HeroTitle.Parent = HeroCard
+
+	local HeroBody = Instance.new("TextLabel")
+	HeroBody.Size = UDim2.new(1, -146, 0, 34)
+	HeroBody.Position = UDim2.fromOffset(28, 36)
+	HeroBody.BackgroundTransparency = 1
+	HeroBody.Font = Enum.Font.Gotham
+	HeroBody.TextSize = 11
+	HeroBody.TextWrapped = true
+	HeroBody.TextXAlignment = Enum.TextXAlignment.Left
+	HeroBody.TextYAlignment = Enum.TextYAlignment.Top
+	HeroBody.TextColor3 = THEME.mutedForeground
+	HeroBody.Text = "Cleaner hierarchy, smoother states, and zero logic changes underneath the panel."
+	HeroBody.Parent = HeroCard
+
+	local HeroPill = Instance.new("Frame")
+	HeroPill.Size = UDim2.fromOffset(98, 28)
+	HeroPill.AnchorPoint = Vector2.new(1, 0.5)
+	HeroPill.Position = UDim2.new(1, -14, 0.5, 0)
+	HeroPill.BackgroundColor3 = THEME.accentSoft
+	HeroPill.BorderSizePixel = 0
+	HeroPill.Parent = HeroCard
+	corner(HeroPill, THEME.radiusXs)
+	stroke(HeroPill, THEME.border)
+
+	local HeroPillText = Instance.new("TextLabel")
+	HeroPillText.Size = UDim2.fromScale(1, 1)
+	HeroPillText.BackgroundTransparency = 1
+	HeroPillText.Font = Enum.Font.GothamSemibold
+	HeroPillText.TextSize = 11
+	HeroPillText.TextColor3 = THEME.foregroundSoft
+	HeroPillText.Text = "Live Panel"
+	HeroPillText.Parent = HeroPill
+
+	local SectionLabel = Instance.new("TextLabel")
+	SectionLabel.LayoutOrder = 2
+	SectionLabel.Size = UDim2.new(1, 0, 0, 18)
+	SectionLabel.BackgroundTransparency = 1
+	SectionLabel.Font = Enum.Font.GothamBold
+	SectionLabel.TextSize = 11
+	SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+	SectionLabel.TextColor3 = THEME.mutedForeground
+	SectionLabel.Text = "AUTOMATION"
+	SectionLabel.Parent = ListPad
 
 	local function makeToggleRow(label, order, statusWidth)
-		statusWidth = statusWidth or 34
+		statusWidth = statusWidth or 72
 
 		local row = Instance.new("Frame")
 		row.Name = label
 		row.LayoutOrder = order
-		row.Size = UDim2.new(1, 0, 0, 28)
+		row.Size = UDim2.new(1, 0, 0, 52)
 		row.BackgroundTransparency = 1
 		row.BorderSizePixel = 0
 		row.Parent = ListPad
@@ -273,15 +543,33 @@ local function run()
 		bg.Parent = row
 		corner(bg, THEME.radiusSm)
 		stroke(bg, THEME.border)
+		gradient(
+			bg,
+			0,
+			ColorSequence.new({
+				ColorSequenceKeypoint.new(0, THEME.cardElevated),
+				ColorSequenceKeypoint.new(1, THEME.card),
+			})
+		)
+
+		local accentBar = Instance.new("Frame")
+		accentBar.Name = "AccentBar"
+		accentBar.Size = UDim2.new(0, 4, 1, -20)
+		accentBar.Position = UDim2.fromOffset(12, 10)
+		accentBar.BackgroundColor3 = THEME.border
+		accentBar.BorderSizePixel = 0
+		accentBar.ZIndex = 2
+		accentBar.Parent = bg
+		corner(accentBar, 99)
 
 		local labelLbl = Instance.new("TextLabel")
-		labelLbl.Size = UDim2.new(1, -(statusWidth + 6), 1, 0)
-		labelLbl.Position = UDim2.fromOffset(10, 0)
+		labelLbl.Size = UDim2.new(1, -(statusWidth + 94), 0, 18)
+		labelLbl.Position = UDim2.fromOffset(28, 9)
 		labelLbl.BackgroundTransparency = 1
 		labelLbl.Font = Enum.Font.GothamSemibold
-		labelLbl.TextSize = 11
+		labelLbl.TextSize = 13
 		labelLbl.TextXAlignment = Enum.TextXAlignment.Left
-		labelLbl.TextYAlignment = Enum.TextYAlignment.Center
+		labelLbl.TextYAlignment = Enum.TextYAlignment.Bottom
 		labelLbl.TextTruncate = Enum.TextTruncate.AtEnd
 		labelLbl.TextColor3 = THEME.foreground
 		labelLbl.Text = label
@@ -292,20 +580,48 @@ local function run()
 			labelLbl.Interactable = false
 		end)
 
+		local descLbl = Instance.new("TextLabel")
+		descLbl.Size = UDim2.new(1, -(statusWidth + 94), 0, 16)
+		descLbl.Position = UDim2.fromOffset(28, 27)
+		descLbl.BackgroundTransparency = 1
+		descLbl.Font = Enum.Font.Gotham
+		descLbl.TextSize = 10
+		descLbl.TextXAlignment = Enum.TextXAlignment.Left
+		descLbl.TextYAlignment = Enum.TextYAlignment.Top
+		descLbl.TextTruncate = Enum.TextTruncate.AtEnd
+		descLbl.TextColor3 = THEME.mutedForeground
+		descLbl.Text = rowDescriptions[label] or "Automation control"
+		descLbl.ZIndex = 2
+		descLbl.Active = false
+		descLbl.Parent = row
+		pcall(function()
+			descLbl.Interactable = false
+		end)
+
+		local statusChip = Instance.new("Frame")
+		statusChip.Name = "StatusChip"
+		statusChip.Size = UDim2.fromOffset(statusWidth, 28)
+		statusChip.AnchorPoint = Vector2.new(1, 0.5)
+		statusChip.Position = UDim2.new(1, -12, 0.5, 0)
+		statusChip.BackgroundColor3 = THEME.secondary
+		statusChip.BorderSizePixel = 0
+		statusChip.ZIndex = 2
+		statusChip.Parent = row
+		corner(statusChip, THEME.radiusXs)
+		stroke(statusChip, THEME.borderSoft)
+
 		local statusLbl = Instance.new("TextLabel")
-		statusLbl.Size = UDim2.fromOffset(statusWidth, 28)
-		statusLbl.AnchorPoint = Vector2.new(1, 0.5)
-		statusLbl.Position = UDim2.new(1, -8, 0.5, 0)
+		statusLbl.Size = UDim2.fromScale(1, 1)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Font = Enum.Font.GothamSemibold
-		statusLbl.TextSize = 10
-		statusLbl.TextXAlignment = Enum.TextXAlignment.Right
+		statusLbl.TextSize = 11
+		statusLbl.TextXAlignment = Enum.TextXAlignment.Center
 		statusLbl.TextYAlignment = Enum.TextYAlignment.Center
 		statusLbl.TextColor3 = THEME.mutedForeground
 		statusLbl.Text = "OFF"
 		statusLbl.ZIndex = 2
 		statusLbl.Active = false
-		statusLbl.Parent = row
+		statusLbl.Parent = statusChip
 		pcall(function()
 			statusLbl.Interactable = false
 		end)
@@ -325,7 +641,13 @@ local function run()
 				return
 			end
 			TweenService:Create(bg, TweenInfo.new(0.1), {
-				BackgroundColor3 = THEME.sidebarAccent,
+				BackgroundColor3 = THEME.cardHover,
+			}):Play()
+			TweenService:Create(statusChip, TweenInfo.new(0.1), {
+				BackgroundColor3 = THEME.accentSoft,
+			}):Play()
+			TweenService:Create(accentBar, TweenInfo.new(0.1), {
+				BackgroundColor3 = THEME.accent,
 			}):Play()
 		end)
 		hit.MouseLeave:Connect(function()
@@ -335,77 +657,172 @@ local function run()
 			TweenService:Create(bg, TweenInfo.new(0.1), {
 				BackgroundColor3 = THEME.card,
 			}):Play()
+			TweenService:Create(statusChip, TweenInfo.new(0.1), {
+				BackgroundColor3 = THEME.secondary,
+			}):Play()
+			TweenService:Create(accentBar, TweenInfo.new(0.1), {
+				BackgroundColor3 = THEME.border,
+			}):Play()
 		end)
 
-		toggleRows[label] = { btn = bg, hit = hit, status = statusLbl, row = row }
+		toggleRows[label] = {
+			btn = bg,
+			hit = hit,
+			status = statusLbl,
+			statusChip = statusChip,
+			accentBar = accentBar,
+			desc = descLbl,
+			row = row,
+		}
 		return hit, statusLbl
 	end
 
-	local FarmBtn, BadgeText = makeToggleRow("Auto Farm", 1)
-	local ClaimBtn, ClaimBadgeText = makeToggleRow("Auto Claim Money", 2)
-	local CageBtn, CageBadgeText = makeToggleRow("Auto Claim Cage", 3)
-	local EquipBtn, EquipBadgeText = makeToggleRow("Auto Equip Best", 4)
-	local SellBtn, SellBadgeText = makeToggleRow("Auto Sell Inventory", 5)
-	local RebirthBtn, RebirthBadgeText = makeToggleRow("Auto Rebirth", 6, 44)
-	local No3dBtn, No3dBadgeText = makeToggleRow("No 3D Render", 7, 44)
-	local AntiAfkBtn, AntiAfkBadgeText = makeToggleRow("Anti AFK", 8, 44)
+	local FarmBtn, BadgeText = makeToggleRow("Auto Farm", 3)
+	local ClaimBtn, ClaimBadgeText = makeToggleRow("Auto Claim Money", 4)
+	local CageBtn, CageBadgeText = makeToggleRow("Auto Claim Cage", 5)
+	local EquipBtn, EquipBadgeText = makeToggleRow("Auto Equip Best", 6)
+	local SellBtn, SellBadgeText = makeToggleRow("Auto Sell Inventory", 7)
+	local RebirthBtn, RebirthBadgeText = makeToggleRow("Auto Rebirth", 8, 74)
+	local No3dBtn, No3dBadgeText = makeToggleRow("No 3D Render", 9, 74)
+	local AntiAfkBtn, AntiAfkBadgeText = makeToggleRow("Anti AFK", 10, 74)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
 	Footer.Size = UDim2.new(1, 0, 0, FOOTER_H)
 	Footer.Position = UDim2.new(0, 0, 1, -FOOTER_H)
-	Footer.BackgroundColor3 = THEME.sidebar
+	Footer.BackgroundTransparency = 1
 	Footer.BorderSizePixel = 0
-	Footer.ZIndex = 1
-	Footer.Parent = Root
+	Footer.ZIndex = 2
+	Footer.Parent = RootShell
 
 	local FooterBorder = Instance.new("Frame")
-	FooterBorder.Size = UDim2.new(1, 0, 0, 1)
-	FooterBorder.BackgroundColor3 = THEME.border
+	FooterBorder.Size = UDim2.new(1, -28, 0, 1)
+	FooterBorder.Position = UDim2.fromOffset(14, 0)
+	FooterBorder.BackgroundColor3 = THEME.borderSoft
 	FooterBorder.BorderSizePixel = 0
 	FooterBorder.Parent = Footer
 
+	local FooterHotkey = Instance.new("Frame")
+	FooterHotkey.Size = UDim2.fromOffset(30, 24)
+	FooterHotkey.Position = UDim2.fromOffset(16, 10)
+	FooterHotkey.BackgroundColor3 = THEME.secondary
+	FooterHotkey.BorderSizePixel = 0
+	FooterHotkey.Parent = Footer
+	corner(FooterHotkey, THEME.radiusXs)
+	stroke(FooterHotkey, THEME.border)
+
+	local FooterHotkeyText = Instance.new("TextLabel")
+	FooterHotkeyText.Size = UDim2.fromScale(1, 1)
+	FooterHotkeyText.BackgroundTransparency = 1
+	FooterHotkeyText.Font = Enum.Font.GothamBold
+	FooterHotkeyText.TextSize = 11
+	FooterHotkeyText.TextColor3 = THEME.foreground
+	FooterHotkeyText.Text = HOTKEY_LABEL
+	FooterHotkeyText.Parent = FooterHotkey
+
 	local FooterHint = Instance.new("TextLabel")
-	FooterHint.Size = UDim2.new(1, -16, 1, 0)
-	FooterHint.Position = UDim2.fromOffset(8, 0)
+	FooterHint.Size = UDim2.new(1, -126, 1, 0)
+	FooterHint.Position = UDim2.fromOffset(54, 0)
 	FooterHint.BackgroundTransparency = 1
 	FooterHint.Font = Enum.Font.Gotham
-	FooterHint.TextSize = 10
-	FooterHint.TextXAlignment = Enum.TextXAlignment.Center
+	FooterHint.TextSize = 11
+	FooterHint.TextXAlignment = Enum.TextXAlignment.Left
 	FooterHint.TextColor3 = THEME.mutedForeground
-	FooterHint.Text = "Press " .. HOTKEY_LABEL .. " to toggle menu"
+	FooterHint.Text = "Toggle panel visibility instantly"
 	FooterHint.Parent = Footer
+
+	local FooterTag = Instance.new("TextLabel")
+	FooterTag.Size = UDim2.fromOffset(84, 24)
+	FooterTag.AnchorPoint = Vector2.new(1, 0.5)
+	FooterTag.Position = UDim2.new(1, -16, 0.5, 0)
+	FooterTag.BackgroundColor3 = THEME.accentSoft
+	FooterTag.BackgroundTransparency = 0.15
+	FooterTag.BorderSizePixel = 0
+	FooterTag.Font = Enum.Font.GothamSemibold
+	FooterTag.TextSize = 10
+	FooterTag.TextColor3 = THEME.foregroundSoft
+	FooterTag.Text = "Premium UI"
+	FooterTag.Parent = Footer
+	corner(FooterTag, THEME.radiusXs)
 
 	local ConfirmOverlay = Instance.new("Frame")
 	ConfirmOverlay.Name = "ConfirmOverlay"
 	ConfirmOverlay.Size = UDim2.fromScale(1, 1)
 	ConfirmOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	ConfirmOverlay.BackgroundTransparency = 0.45
+	ConfirmOverlay.BackgroundTransparency = 0.28
 	ConfirmOverlay.BorderSizePixel = 0
 	ConfirmOverlay.Active = false
 	ConfirmOverlay.Visible = false
 	ConfirmOverlay.ZIndex = 100
 	ConfirmOverlay.Parent = ScreenGui
 
+	local ConfirmShade = Instance.new("Frame")
+	ConfirmShade.Size = UDim2.fromScale(1, 1)
+	ConfirmShade.BackgroundColor3 = THEME.background
+	ConfirmShade.BackgroundTransparency = 0.18
+	ConfirmShade.BorderSizePixel = 0
+	ConfirmShade.ZIndex = 100
+	ConfirmShade.Parent = ConfirmOverlay
+	gradient(
+		ConfirmShade,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 13, 20)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(3, 6, 10)),
+		}),
+		NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.25),
+			NumberSequenceKeypoint.new(1, 0.45),
+		})
+	)
+
 	local ConfirmCard = Instance.new("Frame")
 	ConfirmCard.Name = "ConfirmCard"
-	ConfirmCard.Size = UDim2.fromOffset(320, 156)
+	ConfirmCard.Size = UDim2.fromOffset(372, 198)
 	ConfirmCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	ConfirmCard.Position = UDim2.fromScale(0.5, 0.5)
-	ConfirmCard.BackgroundColor3 = THEME.card
+	ConfirmCard.BackgroundColor3 = THEME.backgroundAlt
 	ConfirmCard.BorderSizePixel = 0
 	ConfirmCard.ZIndex = 101
 	ConfirmCard.Parent = ConfirmOverlay
 	corner(ConfirmCard, THEME.radius)
 	stroke(ConfirmCard, THEME.border)
+	gradient(
+		ConfirmCard,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(17, 24, 39)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(11, 17, 28)),
+		})
+	)
 
-	padding(ConfirmCard, 16, 16, 16, 16)
+	padding(ConfirmCard, 18, 18, 18, 18)
+
+	local ConfirmBadge = Instance.new("Frame")
+	ConfirmBadge.Size = UDim2.fromOffset(96, 26)
+	ConfirmBadge.BackgroundColor3 = THEME.destructiveSurface
+	ConfirmBadge.BorderSizePixel = 0
+	ConfirmBadge.ZIndex = 102
+	ConfirmBadge.Parent = ConfirmCard
+	corner(ConfirmBadge, THEME.radiusXs)
+	stroke(ConfirmBadge, Color3.fromRGB(127, 29, 29))
+
+	local ConfirmBadgeText = Instance.new("TextLabel")
+	ConfirmBadgeText.Size = UDim2.fromScale(1, 1)
+	ConfirmBadgeText.BackgroundTransparency = 1
+	ConfirmBadgeText.Font = Enum.Font.GothamBold
+	ConfirmBadgeText.TextSize = 10
+	ConfirmBadgeText.TextColor3 = THEME.destructive
+	ConfirmBadgeText.Text = "SHUTDOWN"
+	ConfirmBadgeText.ZIndex = 103
+	ConfirmBadgeText.Parent = ConfirmBadge
 
 	local ConfirmTitle = Instance.new("TextLabel")
-	ConfirmTitle.Size = UDim2.new(1, 0, 0, 22)
+	ConfirmTitle.Size = UDim2.new(1, 0, 0, 24)
+	ConfirmTitle.Position = UDim2.fromOffset(0, 34)
 	ConfirmTitle.BackgroundTransparency = 1
-	ConfirmTitle.Font = Enum.Font.GothamSemibold
-	ConfirmTitle.TextSize = 15
+	ConfirmTitle.Font = Enum.Font.GothamBold
+	ConfirmTitle.TextSize = 20
 	ConfirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 	ConfirmTitle.TextColor3 = THEME.foreground
 	ConfirmTitle.Text = "Close script?"
@@ -413,8 +830,8 @@ local function run()
 	ConfirmTitle.Parent = ConfirmCard
 
 	local ConfirmBody = Instance.new("TextLabel")
-	ConfirmBody.Size = UDim2.new(1, 0, 0, 44)
-	ConfirmBody.Position = UDim2.fromOffset(0, 28)
+	ConfirmBody.Size = UDim2.new(1, 0, 0, 58)
+	ConfirmBody.Position = UDim2.fromOffset(0, 68)
 	ConfirmBody.BackgroundTransparency = 1
 	ConfirmBody.Font = Enum.Font.Gotham
 	ConfirmBody.TextSize = 12
@@ -422,13 +839,13 @@ local function run()
 	ConfirmBody.TextYAlignment = Enum.TextYAlignment.Top
 	ConfirmBody.TextWrapped = true
 	ConfirmBody.TextColor3 = THEME.mutedForeground
-	ConfirmBody.Text = "This stops all automation. Re-run the script to use it again."
+	ConfirmBody.Text = "This stops every automation loop, clears the panel, and ends the active session. Re-run the script if you want to start it again."
 	ConfirmBody.ZIndex = 102
 	ConfirmBody.Parent = ConfirmCard
 
 	local ConfirmActions = Instance.new("Frame")
-	ConfirmActions.Size = UDim2.new(1, 0, 0, 32)
-	ConfirmActions.Position = UDim2.new(0, 0, 1, -32)
+	ConfirmActions.Size = UDim2.new(1, 0, 0, 40)
+	ConfirmActions.Position = UDim2.new(0, 0, 1, -40)
 	ConfirmActions.BackgroundTransparency = 1
 	ConfirmActions.ZIndex = 102
 	ConfirmActions.Parent = ConfirmCard
@@ -446,11 +863,19 @@ local function run()
 	ConfirmCancel.Parent = ConfirmActions
 	corner(ConfirmCancel, THEME.radiusSm)
 	stroke(ConfirmCancel, THEME.border)
+	gradient(
+		ConfirmCancel,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 27, 42)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 20, 31)),
+		})
+	)
 
 	local ConfirmClose = Instance.new("TextButton")
 	ConfirmClose.Size = UDim2.new(0.5, -6, 1, 0)
 	ConfirmClose.Position = UDim2.new(0.5, 6, 0, 0)
-	ConfirmClose.BackgroundColor3 = Color3.fromRGB(69, 10, 10)
+	ConfirmClose.BackgroundColor3 = THEME.destructiveSurface
 	ConfirmClose.BorderSizePixel = 0
 	ConfirmClose.AutoButtonColor = false
 	ConfirmClose.Font = Enum.Font.GothamSemibold
@@ -461,6 +886,39 @@ local function run()
 	ConfirmClose.Parent = ConfirmActions
 	corner(ConfirmClose, THEME.radiusSm)
 	stroke(ConfirmClose, Color3.fromRGB(127, 29, 29))
+	gradient(
+		ConfirmClose,
+		90,
+		ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(82, 24, 34)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(58, 18, 26)),
+		})
+	)
+
+	ConfirmCancel.MouseEnter:Connect(function()
+		TweenService:Create(ConfirmCancel, TweenInfo.new(0.12), {
+			BackgroundColor3 = THEME.cardHover,
+			TextColor3 = THEME.foreground,
+		}):Play()
+	end)
+	ConfirmCancel.MouseLeave:Connect(function()
+		TweenService:Create(ConfirmCancel, TweenInfo.new(0.12), {
+			BackgroundColor3 = THEME.secondary,
+			TextColor3 = THEME.secondaryForeground,
+		}):Play()
+	end)
+	ConfirmClose.MouseEnter:Connect(function()
+		TweenService:Create(ConfirmClose, TweenInfo.new(0.12), {
+			BackgroundColor3 = Color3.fromRGB(92, 27, 37),
+			TextColor3 = Color3.fromRGB(254, 202, 202),
+		}):Play()
+	end)
+	ConfirmClose.MouseLeave:Connect(function()
+		TweenService:Create(ConfirmClose, TweenInfo.new(0.12), {
+			BackgroundColor3 = THEME.destructiveSurface,
+			TextColor3 = THEME.destructive,
+		}):Play()
+	end)
 
 	local function setGuiVisible(visible)
 		guiVisible = visible
@@ -569,13 +1027,20 @@ local function run()
 		ConfirmOverlay.Visible = false
 	end
 
+	local function dismissConfirmBackdrop(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			hideCloseConfirm()
+		end
+	end
+
 	ConfirmCancel.MouseButton1Click:Connect(hideCloseConfirm)
 	ConfirmClose.MouseButton1Click:Connect(shutdownScript)
 	ConfirmOverlay.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Target == ConfirmOverlay then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and (input.Target == ConfirmOverlay or input.Target == ConfirmShade) then
 			hideCloseConfirm()
 		end
 	end)
+	ConfirmShade.InputBegan:Connect(dismissConfirmBackdrop)
 
 	local function getKnitRE(serviceName, remoteName)
 		local src = ReplicatedStorage:FindFirstChild("src")
@@ -1325,13 +1790,31 @@ local function run()
 		if not autoRebirth then
 			row.row:SetAttribute("Active", false)
 			row.btn.BackgroundColor3 = THEME.card
+			if row.statusChip then
+				row.statusChip.BackgroundColor3 = THEME.secondary
+			end
+			if row.accentBar then
+				row.accentBar.BackgroundColor3 = THEME.border
+			end
+			if row.desc then
+				row.desc.TextColor3 = THEME.mutedForeground
+			end
 			row.status.Text = "OFF"
 			row.status.TextColor3 = THEME.mutedForeground
 			return
 		end
 
 		row.row:SetAttribute("Active", true)
-		row.btn.BackgroundColor3 = THEME.sidebarAccent
+		row.btn.BackgroundColor3 = THEME.cardActive
+		if row.statusChip then
+			row.statusChip.BackgroundColor3 = THEME.accentSoft
+		end
+		if row.accentBar then
+			row.accentBar.BackgroundColor3 = THEME.accent
+		end
+		if row.desc then
+			row.desc.TextColor3 = THEME.foregroundSoft
+		end
 
 		local info = getRebirthInfo()
 		if not info then
@@ -1345,6 +1828,12 @@ local function run()
 		elseif info.canRebirth then
 			row.status.Text = "READY"
 			row.status.TextColor3 = THEME.success
+			if row.statusChip then
+				row.statusChip.BackgroundColor3 = THEME.successSurface
+			end
+			if row.accentBar then
+				row.accentBar.BackgroundColor3 = THEME.success
+			end
 		else
 			row.status.Text = "R" .. tostring(info.rebirth)
 			row.status.TextColor3 = THEME.mutedForeground
@@ -1491,7 +1980,16 @@ local function run()
 		if not row then return end
 		setBadge(on, row.status)
 		row.row:SetAttribute("Active", on)
-		row.btn.BackgroundColor3 = on and THEME.sidebarAccent or THEME.card
+		row.btn.BackgroundColor3 = on and THEME.cardActive or THEME.card
+		if row.statusChip then
+			row.statusChip.BackgroundColor3 = on and THEME.successSurface or THEME.secondary
+		end
+		if row.accentBar then
+			row.accentBar.BackgroundColor3 = on and THEME.success or THEME.border
+		end
+		if row.desc then
+			row.desc.TextColor3 = on and THEME.foregroundSoft or THEME.mutedForeground
+		end
 	end
 
 	local function refreshStatus()
