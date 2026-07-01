@@ -75,9 +75,6 @@ local function padding(parent, t, r, b, l)
 	return p
 end
 
-	pcall(function() gui.Parent = game:GetService("CoreGui") end)
-end
-
 local function destroyExistingFarmGuis(localPlayer)
 	local function sweep(parent)
 		if not parent then
