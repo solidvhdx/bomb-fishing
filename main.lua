@@ -1270,40 +1270,40 @@ local function run()
 
 	local function setupRebirthSystems()
 		loadGameConfig()
-		ReplicatedStorage:WaitForChild("src", 30)
+		local src = ReplicatedStorage:WaitForChild("src", 30)
 		loadGameConfig()
+		if not src then
+			return
+		end
 
+		-- Get KnitClient (already required by the game itself)
 		local okKnit, KnitClient = pcall(function()
-			return require(ReplicatedStorage.src.Modules.KnitClient)
+			return require(src.Modules.KnitClient)
 		end)
 		if not okKnit or not KnitClient then
 			return
 		end
 
+		-- Poll for DataController replica
 		for _ = 1, 120 do
 			if not alive then
 				return
 			end
-
-			local okDc, dc = pcall(function()
-				return KnitClient.GetController("DataController")
-			end)
-			if okDc and dc then
-				local okRep, rep = pcall(function()
-					return dc:getDataReplica(true)
-				end)
-				if okRep and rep and rep.Data then
-					dataReplica = rep
-					local okSvc, svc = pcall(function()
-						return KnitClient.GetService("RebirthService")
-					end)
-					if okSvc then
-						RebirthServiceClient = svc
-					end
-					break
+			local ok, result = pcall(function()
+				local dc = KnitClient.GetController("DataController")
+				if not dc then
+					return nil
 				end
+				local rep = dc:getDataReplica(true)
+				if rep and rep.Data then
+					return rep
+				end
+				return nil
+			end)
+			if ok and result then
+				dataReplica = result
+				break
 			end
-
 			task.wait(0.5)
 		end
 
@@ -1311,12 +1311,18 @@ local function run()
 			return
 		end
 
-		rebirthSystemsReady = true
-		task.defer(function()
-			if isActiveScript() then
-				refreshStatus()
-			end
+		-- Get RebirthService remote
+		local okSvc, svc = pcall(function()
+			return KnitClient.GetService("RebirthService")
 		end)
+		if okSvc and svc then
+			RebirthServiceClient = svc
+		end
+
+		rebirthSystemsReady = true
+
+		-- refreshStatus is safe to call here since we're in task.spawn (main-compatible thread)
+		pcall(refreshStatus)
 	end
 
 	local rebirthSetupRunning = false
