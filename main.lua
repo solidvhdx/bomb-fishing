@@ -1,4 +1,4 @@
-﻿--[[ bomb fishing farm ]]
+--[[ bomb fishing farm ]]
 
 local function protectGui(gui)
 	pcall(function()
