@@ -119,7 +119,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(380, 275)
+	Root.Size = UDim2.fromOffset(300, 248)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -184,161 +184,85 @@ local function run()
 	Body.Name = "Body"
 	Body.Size = UDim2.new(1, 0, 1, -(HEADER_H + FOOTER_H))
 	Body.Position = UDim2.fromOffset(0, HEADER_H)
-	Body.BackgroundTransparency = 1
+	Body.BackgroundColor3 = THEME.background
+	Body.BorderSizePixel = 0
 	Body.Parent = Root
 
-	local Sidebar = Instance.new("Frame")
-	Sidebar.Name = "Sidebar"
-	Sidebar.Size = UDim2.new(0, 140, 1, 0)
-	Sidebar.BackgroundColor3 = THEME.sidebar
-	Sidebar.BorderSizePixel = 0
-	Sidebar.Parent = Body
+	local ListPad = Instance.new("Frame")
+	ListPad.Size = UDim2.new(1, 0, 1, 0)
+	ListPad.BackgroundTransparency = 1
+	ListPad.Parent = Body
+	padding(ListPad, 8, 10, 8, 10)
 
-	local SidebarBorder = Instance.new("Frame")
-	SidebarBorder.Size = UDim2.new(0, 1, 1, 0)
-	SidebarBorder.Position = UDim2.new(1, -1, 0, 0)
-	SidebarBorder.BackgroundColor3 = THEME.border
-	SidebarBorder.BorderSizePixel = 0
-	SidebarBorder.Parent = Sidebar
+	local ListLayout = Instance.new("UIListLayout")
+	ListLayout.Padding = UDim.new(0, 4)
+	ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	ListLayout.Parent = ListPad
 
-	local SidebarPad = Instance.new("Frame")
-	SidebarPad.Size = UDim2.new(1, 0, 1, 0)
-	SidebarPad.BackgroundTransparency = 1
-	SidebarPad.Parent = Sidebar
-	padding(SidebarPad, 10, 8, 10, 8)
+	local toggleRows = {}
 
-	local SidebarSub = Instance.new("TextLabel")
-	SidebarSub.Size = UDim2.new(1, 0, 0, 14)
-	SidebarSub.BackgroundTransparency = 1
-	SidebarSub.Font = Enum.Font.Gotham
-	SidebarSub.TextSize = 10
-	SidebarSub.TextXAlignment = Enum.TextXAlignment.Left
-	SidebarSub.TextColor3 = THEME.mutedForeground
-	SidebarSub.Text = "Controls"
-	SidebarSub.Parent = SidebarPad
-
-	local NavList = Instance.new("Frame")
-	NavList.Name = "NavList"
-	NavList.Size = UDim2.new(1, 0, 1, -18)
-	NavList.Position = UDim2.fromOffset(0, 18)
-	NavList.BackgroundTransparency = 1
-	NavList.Parent = SidebarPad
-
-	local navLayout = Instance.new("UIListLayout")
-	navLayout.Padding = UDim.new(0, 4)
-	navLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	navLayout.Parent = NavList
-
-	local navButtons = {}
-
-	local function makeNavItem(label, order)
+	local function makeToggleRow(label, order)
 		local btn = Instance.new("TextButton")
 		btn.Name = label
 		btn.LayoutOrder = order
-		btn.Size = UDim2.new(1, 0, 0, 28)
-		btn.BackgroundColor3 = THEME.sidebar
+		btn.Size = UDim2.new(1, 0, 0, 30)
+		btn.BackgroundColor3 = THEME.card
 		btn.BorderSizePixel = 0
 		btn.AutoButtonColor = false
-		btn.Font = Enum.Font.GothamSemibold
-		btn.TextSize = 12
-		btn.TextXAlignment = Enum.TextXAlignment.Left
-		btn.TextColor3 = THEME.foreground
-		btn.Text = "  " .. label
+		btn.Text = ""
 		btn.ClipsDescendants = true
-		btn.Parent = NavList
+		btn.Parent = ListPad
 		corner(btn, THEME.radiusSm)
+		stroke(btn, THEME.border)
+
+		local labelLbl = Instance.new("TextLabel")
+		labelLbl.Size = UDim2.new(1, -40, 1, 0)
+		labelLbl.Position = UDim2.fromOffset(10, 0)
+		labelLbl.BackgroundTransparency = 1
+		labelLbl.Font = Enum.Font.GothamSemibold
+		labelLbl.TextSize = 11
+		labelLbl.TextXAlignment = Enum.TextXAlignment.Left
+		labelLbl.TextYAlignment = Enum.TextYAlignment.Center
+		labelLbl.TextTruncate = Enum.TextTruncate.AtEnd
+		labelLbl.TextColor3 = THEME.foreground
+		labelLbl.Text = label
+		labelLbl.Parent = btn
+
+		local statusLbl = Instance.new("TextLabel")
+		statusLbl.Size = UDim2.fromOffset(34, 30)
+		statusLbl.AnchorPoint = Vector2.new(1, 0.5)
+		statusLbl.Position = UDim2.new(1, -8, 0.5, 0)
+		statusLbl.BackgroundTransparency = 1
+		statusLbl.Font = Enum.Font.GothamSemibold
+		statusLbl.TextSize = 10
+		statusLbl.TextXAlignment = Enum.TextXAlignment.Right
+		statusLbl.TextYAlignment = Enum.TextYAlignment.Center
+		statusLbl.TextColor3 = THEME.mutedForeground
+		statusLbl.Text = "OFF"
+		statusLbl.Parent = btn
 
 		btn.MouseEnter:Connect(function()
 			if btn:GetAttribute("Active") then return end
-			TweenService:Create(btn, TweenInfo.new(0.12), {
+			TweenService:Create(btn, TweenInfo.new(0.1), {
 				BackgroundColor3 = THEME.sidebarAccent,
 			}):Play()
 		end)
 		btn.MouseLeave:Connect(function()
 			if btn:GetAttribute("Active") then return end
-			TweenService:Create(btn, TweenInfo.new(0.12), {
-				BackgroundColor3 = THEME.sidebar,
+			TweenService:Create(btn, TweenInfo.new(0.1), {
+				BackgroundColor3 = THEME.card,
 			}):Play()
 		end)
 
-		navButtons[label] = btn
-		return btn
+		toggleRows[label] = { btn = btn, status = statusLbl }
+		return btn, statusLbl
 	end
 
-	local FarmBtn = makeNavItem("Auto Farm", 1)
-	local ClaimBtn = makeNavItem("Auto Claim", 2)
-	local EquipBtn = makeNavItem("Auto Equip Best", 3)
-	local SellBtn = makeNavItem("Auto Sell Inventory", 4)
-	local CageBtn = makeNavItem("Auto Claim Cage", 5)
-
-	local Main = Instance.new("Frame")
-	Main.Name = "Main"
-	Main.Size = UDim2.new(1, -140, 1, 0)
-	Main.Position = UDim2.fromOffset(140, 0)
-	Main.BackgroundColor3 = THEME.background
-	Main.BorderSizePixel = 0
-	Main.Parent = Body
-
-	local MainPad = Instance.new("Frame")
-	MainPad.Size = UDim2.new(1, 0, 1, 0)
-	MainPad.BackgroundTransparency = 1
-	MainPad.Parent = Main
-	padding(MainPad, 6, 8, 6, 8)
-
-	local MainLayout = Instance.new("UIListLayout")
-	MainLayout.Padding = UDim.new(0, 3)
-	MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	MainLayout.Parent = MainPad
-
-	local function makeStatusRow(title, order)
-		local row = Instance.new("Frame")
-		row.Name = title
-		row.LayoutOrder = order
-		row.Size = UDim2.new(1, 0, 0, 14)
-		row.BackgroundTransparency = 1
-		row.Parent = MainPad
-
-		local rowLayout = Instance.new("UIListLayout")
-		rowLayout.FillDirection = Enum.FillDirection.Horizontal
-		rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		rowLayout.Parent = row
-
-		local titleLbl = Instance.new("TextLabel")
-		titleLbl.LayoutOrder = 1
-		titleLbl.Size = UDim2.new(1, -34, 0, 14)
-		titleLbl.BackgroundTransparency = 1
-		titleLbl.Font = Enum.Font.Gotham
-		titleLbl.TextSize = 11
-		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-		titleLbl.TextYAlignment = Enum.TextYAlignment.Center
-		titleLbl.TextWrapped = false
-		titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
-		titleLbl.TextColor3 = THEME.mutedForeground
-		titleLbl.Text = title
-		titleLbl.Parent = row
-
-		local badgeText = Instance.new("TextLabel")
-		badgeText.LayoutOrder = 2
-		badgeText.Size = UDim2.fromOffset(34, 14)
-		badgeText.BackgroundTransparency = 1
-		badgeText.Font = Enum.Font.GothamSemibold
-		badgeText.TextSize = 10
-		badgeText.TextXAlignment = Enum.TextXAlignment.Right
-		badgeText.TextYAlignment = Enum.TextYAlignment.Center
-		badgeText.TextWrapped = false
-		badgeText.TextColor3 = THEME.mutedForeground
-		badgeText.Text = "OFF"
-		badgeText.Parent = row
-
-		return badgeText
-	end
-
-	local BadgeText = makeStatusRow("Auto Farm", 1)
-	local ClaimBadgeText = makeStatusRow("Auto Claim", 2)
-	local EquipBadgeText = makeStatusRow("Auto Equip Best", 3)
-	local SellBadgeText = makeStatusRow("Auto Sell Inventory", 4)
-	local CageBadgeText = makeStatusRow("Auto Claim Cage", 5)
+	local FarmBtn, BadgeText = makeToggleRow("Auto Farm", 1)
+	local ClaimBtn, ClaimBadgeText = makeToggleRow("Auto Claim Money", 2)
+	local CageBtn, CageBadgeText = makeToggleRow("Auto Claim Cage", 3)
+	local EquipBtn, EquipBadgeText = makeToggleRow("Auto Equip Best", 4)
+	local SellBtn, SellBadgeText = makeToggleRow("Auto Sell Inventory", 5)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -410,7 +334,7 @@ local function run()
 	ConfirmBody.TextYAlignment = Enum.TextYAlignment.Top
 	ConfirmBody.TextWrapped = true
 	ConfirmBody.TextColor3 = THEME.mutedForeground
-	ConfirmBody.Text = "This stops Auto Farm and Auto Claim. Re-run the script to use it again."
+	ConfirmBody.Text = "This stops all automation. Re-run the script to use it again."
 	ConfirmBody.ZIndex = 102
 	ConfirmBody.Parent = ConfirmCard
 
@@ -1205,25 +1129,20 @@ local function run()
 		end
 	end
 
-	local function setNavActive(label, on)
-		local btn = navButtons[label]
-		if not btn then return end
-		btn:SetAttribute("Active", on)
-		btn.BackgroundColor3 = on and THEME.sidebarAccent or THEME.sidebar
-		btn.TextColor3 = on and THEME.foreground or THEME.mutedForeground
+	local function setRowActive(label, on)
+		local row = toggleRows[label]
+		if not row then return end
+		setBadge(on, row.status)
+		row.btn:SetAttribute("Active", on)
+		row.btn.BackgroundColor3 = on and THEME.sidebarAccent or THEME.card
 	end
 
 	local function refreshStatus()
-		setBadge(farming, BadgeText)
-		setBadge(claiming, ClaimBadgeText)
-		setBadge(equipBest, EquipBadgeText)
-		setBadge(autoSell, SellBadgeText)
-		setBadge(claimCage, CageBadgeText)
-		setNavActive("Auto Farm", farming)
-		setNavActive("Auto Claim", claiming)
-		setNavActive("Auto Equip Best", equipBest)
-		setNavActive("Auto Sell Inventory", autoSell)
-		setNavActive("Auto Claim Cage", claimCage)
+		setRowActive("Auto Farm", farming)
+		setRowActive("Auto Claim Money", claiming)
+		setRowActive("Auto Claim Cage", claimCage)
+		setRowActive("Auto Equip Best", equipBest)
+		setRowActive("Auto Sell Inventory", autoSell)
 	end
 
 	local function toggleAutoClaim()
@@ -1269,6 +1188,8 @@ local function run()
 	end)
 	ClaimBtn.MouseButton1Click:Connect(toggleAutoClaim)
 
+	CageBtn.MouseButton1Click:Connect(toggleAutoClaimCage)
+
 	EquipBtn.MouseButton1Click:Connect(function()
 		equipBest = not equipBest
 		refreshStatus()
@@ -1278,8 +1199,6 @@ local function run()
 		autoSell = not autoSell
 		refreshStatus()
 	end)
-
-	CageBtn.MouseButton1Click:Connect(toggleAutoClaimCage)
 
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
