@@ -139,7 +139,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(300, 278)
+	Root.Size = UDim2.fromOffset(300, 290)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -226,7 +226,7 @@ local function run()
 		local btn = Instance.new("TextButton")
 		btn.Name = label
 		btn.LayoutOrder = order
-		btn.Size = UDim2.new(1, 0, 0, 30)
+		btn.Size = UDim2.new(1, 0, 0, 28)
 		btn.BackgroundColor3 = THEME.card
 		btn.BorderSizePixel = 0
 		btn.AutoButtonColor = false
@@ -247,10 +247,11 @@ local function run()
 		labelLbl.TextTruncate = Enum.TextTruncate.AtEnd
 		labelLbl.TextColor3 = THEME.foreground
 		labelLbl.Text = label
+		labelLbl.Active = false
 		labelLbl.Parent = btn
 
 		local statusLbl = Instance.new("TextLabel")
-		statusLbl.Size = UDim2.fromOffset(statusWidth, 30)
+		statusLbl.Size = UDim2.fromOffset(statusWidth, 28)
 		statusLbl.AnchorPoint = Vector2.new(1, 0.5)
 		statusLbl.Position = UDim2.new(1, -8, 0.5, 0)
 		statusLbl.BackgroundTransparency = 1
@@ -260,6 +261,7 @@ local function run()
 		statusLbl.TextYAlignment = Enum.TextYAlignment.Center
 		statusLbl.TextColor3 = THEME.mutedForeground
 		statusLbl.Text = "OFF"
+		statusLbl.Active = false
 		statusLbl.Parent = btn
 
 		btn.MouseEnter:Connect(function()
@@ -1249,13 +1251,21 @@ local function run()
 		end
 
 		rebirthSystemsReady = true
+		if isActiveScript() then
+			refreshStatus()
+		end
 	end
 
+	local rebirthSetupRunning = false
 	local function ensureRebirthSystems()
-		if rebirthSystemsReady then
+		if rebirthSystemsReady or rebirthSetupRunning then
 			return
 		end
-		task.spawn(setupRebirthSystems)
+		rebirthSetupRunning = true
+		task.spawn(function()
+			setupRebirthSystems()
+			rebirthSetupRunning = false
+		end)
 	end
 
 	local function doFarmCycle()
@@ -1344,7 +1354,16 @@ local function run()
 		setRowActive("Auto Equip Best", equipBest)
 		setRowActive("Auto Sell Inventory", autoSell)
 		if autoRebirth then
-			refreshRebirthRow()
+			if rebirthSystemsReady then
+				refreshRebirthRow()
+			else
+				setRowActive("Auto Rebirth", true)
+				local row = toggleRows["Auto Rebirth"]
+				if row then
+					row.status.Text = "..."
+					row.status.TextColor3 = THEME.mutedForeground
+				end
+			end
 		else
 			setRowActive("Auto Rebirth", false)
 		end
