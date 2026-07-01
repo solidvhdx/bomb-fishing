@@ -93,6 +93,8 @@ local function run()
 		PostFinishWait = 0.25,
 		StartArg = 0,
 		ClaimDelay = 60.0,
+		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
+		StartupPlotWait = 1,
 		_lastClaim = 0,
 	}
 
@@ -961,6 +963,106 @@ local function run()
 		return nil
 	end
 
+	local function resolveGuiPath(root, path)
+		local current = root
+		for _, name in ipairs(path) do
+			current = current and current:FindFirstChild(name)
+		end
+		return current
+	end
+
+	local function findPlotClickable(node)
+		if not node then
+			return nil
+		end
+		if node:IsA("GuiButton") then
+			return node
+		end
+		local cur = node
+		while cur do
+			if cur:IsA("GuiButton") then
+				return cur
+			end
+			cur = cur.Parent
+		end
+		for _, desc in ipairs(node:GetDescendants()) do
+			if desc:IsA("GuiButton") then
+				return desc
+			end
+		end
+		return nil
+	end
+
+	local function pressGuiOnce(btn)
+		if not btn or not btn:IsA("GuiButton") then
+			return false
+		end
+		if getconnections then
+			for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+				if conn.Function then
+					pcall(conn.Function)
+					return true
+				end
+			end
+			if btn.Activated then
+				for _, conn in ipairs(getconnections(btn.Activated)) do
+					if conn.Function then
+						pcall(conn.Function)
+						return true
+					end
+				end
+			end
+		end
+		if firesignal then
+			pcall(firesignal, btn.MouseButton1Click)
+			return true
+		end
+		return false
+	end
+
+	local function pressPlotButton()
+		local pg = LocalPlayer:FindFirstChild("PlayerGui")
+		local target = pg and resolveGuiPath(pg, CONFIG.PlotButtonPath)
+		if not target then
+			local starterGui = game:GetService("StarterGui")
+			target = resolveGuiPath(starterGui, CONFIG.PlotButtonPath)
+		end
+		local btn = findPlotClickable(target)
+		if not btn then
+			return false
+		end
+		return pressGuiOnce(btn)
+	end
+
+	local function cachePlotOnStartup()
+		if not alive then
+			return
+		end
+
+		LocalPlayer:WaitForChild("PlayerGui", 15)
+		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+		getBasesFolder()
+
+		for _ = 1, 20 do
+			if not alive then
+				return
+			end
+			if pressPlotButton() then
+				break
+			end
+			task.wait(0.25)
+		end
+
+		task.wait(CONFIG.StartupPlotWait)
+		if not alive then
+			return
+		end
+
+		resolvePlayerBase()
+		doClaim()
+		resolvePlayerBase()
+	end
+
 	local function doStart()
 		if not StartRemote then StartRemote = getBombRE("Start") end
 		if not StartRemote then return false end
@@ -1179,6 +1281,8 @@ local function run()
 			setLearnedBase(base.Name)
 		end
 	end))
+
+	task.spawn(cachePlotOnStartup)
 
 	refreshStatus()
 end
