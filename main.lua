@@ -142,6 +142,7 @@ local function run()
 	local equipBest = false
 	local autoSell = false
 	local autoRebirth = false
+	local no3dRender = false
 	local guiVisible = true
 	local farmGeneration = 0
 	local farmCycleBusy = false
@@ -165,7 +166,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(300, 290)
+	Root.Size = UDim2.fromOffset(300, 322)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -343,6 +344,7 @@ local function run()
 	local EquipBtn, EquipBadgeText = makeToggleRow("Auto Equip Best", 4)
 	local SellBtn, SellBadgeText = makeToggleRow("Auto Sell Inventory", 5)
 	local RebirthBtn, RebirthBadgeText = makeToggleRow("Auto Rebirth", 6, 44)
+	local No3dBtn, No3dBadgeText = makeToggleRow("No 3D Render", 7, 44)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -496,6 +498,12 @@ local function run()
 		TOGGLE_KEY
 	)
 
+	local function applyNo3dRender(enabled)
+		pcall(function()
+			RunService:Set3dRenderingEnabled(not enabled)
+		end)
+	end
+
 	local function shutdownScript()
 		if not alive then
 			return
@@ -505,6 +513,9 @@ local function run()
 		claiming = false
 		claimCage = false
 		autoRebirth = false
+		pcall(function()
+			RunService:Set3dRenderingEnabled(true)
+		end)
 		pcall(function()
 			ContextActionService:UnbindAction(TOGGLE_ACTION)
 		end)
@@ -1480,6 +1491,7 @@ local function run()
 		else
 			setRowActive("Auto Rebirth", false)
 		end
+		setRowActive("No 3D Render", no3dRender)
 	end
 
 	local function startupPlotAndClaim()
@@ -1544,6 +1556,10 @@ local function run()
 			ensureRebirthSystems()
 			tryAutoRebirth()
 		end
+	end)
+	wireToggle("No 3D Render", function()
+		no3dRender = not no3dRender
+		applyNo3dRender(no3dRender)
 	end)
 
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
