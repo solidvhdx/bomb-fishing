@@ -130,37 +130,24 @@ local function run()
 	TopBar.Size = UDim2.new(1, 0, 0, HEADER_H)
 	TopBar.BackgroundColor3 = THEME.sidebar
 	TopBar.BorderSizePixel = 0
-	TopBar.Active = true
 	TopBar.Parent = Root
-
-	local DragHandle = Instance.new("TextButton")
-	DragHandle.Name = "DragHandle"
-	DragHandle.Size = UDim2.fromScale(1, 1)
-	DragHandle.BackgroundTransparency = 1
-	DragHandle.Text = ""
-	DragHandle.AutoButtonColor = false
-	DragHandle.ZIndex = 1
-	DragHandle.Parent = TopBar
 
 	local TopBarBorder = Instance.new("Frame")
 	TopBarBorder.Size = UDim2.new(1, 0, 0, 1)
 	TopBarBorder.Position = UDim2.new(0, 0, 1, -1)
 	TopBarBorder.BackgroundColor3 = THEME.border
 	TopBarBorder.BorderSizePixel = 0
-	TopBarBorder.Active = false
 	TopBarBorder.Parent = TopBar
 
 	local TopTitle = Instance.new("TextLabel")
 	TopTitle.Size = UDim2.new(1, -48, 1, 0)
 	TopTitle.Position = UDim2.fromOffset(14, 0)
 	TopTitle.BackgroundTransparency = 1
-	TopTitle.Active = false
 	TopTitle.Font = Enum.Font.GothamSemibold
 	TopTitle.TextSize = 14
 	TopTitle.TextXAlignment = Enum.TextXAlignment.Left
 	TopTitle.TextColor3 = THEME.foreground
 	TopTitle.Text = "Bomb Fishing"
-	TopTitle.ZIndex = 2
 	TopTitle.Parent = TopBar
 
 	local CloseBtn = Instance.new("TextButton")
@@ -173,7 +160,6 @@ local function run()
 	CloseBtn.TextSize = 14
 	CloseBtn.TextColor3 = THEME.mutedForeground
 	CloseBtn.Text = "X"
-	CloseBtn.ZIndex = 3
 	CloseBtn.Parent = TopBar
 	corner(CloseBtn, THEME.radiusSm)
 	stroke(CloseBtn, THEME.border)
@@ -1234,34 +1220,6 @@ local function run()
 	end)
 
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
-
-	local dragging, dragStart, startPos = false, nil, nil
-	DragHandle.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			dragStart = input.Position
-			startPos = Root.Position
-		end
-	end)
-	DragHandle.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = false
-		end
-	end)
-	track(UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = false
-		end
-	end))
-	track(UserInputService.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local d = input.Position - dragStart
-			Root.Position = UDim2.new(
-				startPos.X.Scale, startPos.X.Offset + d.X,
-				startPos.Y.Scale, startPos.Y.Offset + d.Y
-			)
-		end
-	end))
 
 	track(UserInputService.InputBegan:Connect(function(input)
 		if input.UserInputType ~= Enum.UserInputType.Keyboard then
