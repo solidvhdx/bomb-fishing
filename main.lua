@@ -104,7 +104,7 @@ local function run()
 	local equipBest = false
 	local autoSell = false
 	local guiVisible = true
-	local farmLoopRunning = false
+	local farmGeneration = 0
 
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "BombFishingFarm"
@@ -987,16 +987,31 @@ local function run()
 		return btn and pressGuiOnce(btn) or false
 	end
 
+	local function ensureFarmRemotes()
+		if StartRemote and ThrowRemote then
+			return true
+		end
+		local src = ReplicatedStorage:FindFirstChild("src") or ReplicatedStorage:WaitForChild("src", 15)
+		if not src then
+			return false
+		end
+		StartRemote = StartRemote or getBombRE("Start")
+		ThrowRemote = ThrowRemote or getBombRE("Throw")
+		return StartRemote ~= nil and ThrowRemote ~= nil
+	end
+
 	local function doStart()
-		if not StartRemote then StartRemote = getBombRE("Start") end
-		if not StartRemote then return false end
+		if not ensureFarmRemotes() then
+			return false
+		end
 		StartRemote:FireServer(CONFIG.StartArg)
 		return true
 	end
 
 	local function doThrow()
-		if not ThrowRemote then ThrowRemote = getBombRE("Throw") end
-		if not ThrowRemote then return false end
+		if not ensureFarmRemotes() then
+			return false
+		end
 		ThrowRemote:FireServer(THROW_POWER)
 		return true
 	end
@@ -1164,15 +1179,19 @@ local function run()
 	end
 
 	local function startFarmLoop()
-		if farmLoopRunning then
+		if not alive or not farming then
 			return
 		end
-		farmLoopRunning = true
+		farmGeneration += 1
+		local generation = farmGeneration
 		task.spawn(function()
-			while alive and farming do
-				doFarmCycle()
+			while alive and farming and farmGeneration == generation do
+				local ok, err = pcall(doFarmCycle)
+				if not ok then
+					warn("[Bomb Fishing] farm cycle error:", err)
+					task.wait(2)
+				end
 			end
-			farmLoopRunning = false
 		end)
 	end
 
@@ -1285,9 +1304,6 @@ local function run()
 		if claimCage and now - CONFIG._lastCageClaim >= CONFIG.CageClaimDelay then
 			CONFIG._lastCageClaim = now
 			doClaimCage()
-		end
-		if claiming or claimCage then
-			refreshStatus()
 		end
 	end))
 
