@@ -111,12 +111,12 @@ local function run()
 	ScreenGui.DisplayOrder = 999999
 	mountGui(ScreenGui, LocalPlayer)
 
-	local HEADER_H = 44
-	local FOOTER_H = 30
+	local HEADER_H = 40
+	local FOOTER_H = 26
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(400, 300)
+	Root.Size = UDim2.fromOffset(380, 240)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -222,7 +222,7 @@ local function run()
 	NavList.Parent = SidebarPad
 
 	local navLayout = Instance.new("UIListLayout")
-	navLayout.Padding = UDim.new(0, 6)
+	navLayout.Padding = UDim.new(0, 4)
 	navLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	navLayout.Parent = NavList
 
@@ -232,7 +232,7 @@ local function run()
 		local btn = Instance.new("TextButton")
 		btn.Name = label
 		btn.LayoutOrder = order
-		btn.Size = UDim2.new(1, 0, 0, 32)
+		btn.Size = UDim2.new(1, 0, 0, 28)
 		btn.BackgroundColor3 = THEME.sidebar
 		btn.BorderSizePixel = 0
 		btn.AutoButtonColor = false
@@ -279,10 +279,10 @@ local function run()
 	MainPad.Size = UDim2.new(1, 0, 1, 0)
 	MainPad.BackgroundTransparency = 1
 	MainPad.Parent = Main
-	padding(MainPad, 8, 10, 8, 10)
+	padding(MainPad, 6, 8, 6, 8)
 
 	local MainLayout = Instance.new("UIListLayout")
-	MainLayout.Padding = UDim.new(0, 2)
+	MainLayout.Padding = UDim.new(0, 3)
 	MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	MainLayout.Parent = MainPad
 
@@ -290,29 +290,39 @@ local function run()
 		local row = Instance.new("Frame")
 		row.Name = title
 		row.LayoutOrder = order
-		row.Size = UDim2.new(1, 0, 0, 18)
+		row.Size = UDim2.new(1, 0, 0, 14)
 		row.BackgroundTransparency = 1
 		row.Parent = MainPad
 
+		local rowLayout = Instance.new("UIListLayout")
+		rowLayout.FillDirection = Enum.FillDirection.Horizontal
+		rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+		rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		rowLayout.Parent = row
+
 		local titleLbl = Instance.new("TextLabel")
-		titleLbl.Size = UDim2.new(1, -30, 1, 0)
+		titleLbl.LayoutOrder = 1
+		titleLbl.Size = UDim2.new(1, -34, 0, 14)
 		titleLbl.BackgroundTransparency = 1
 		titleLbl.Font = Enum.Font.Gotham
 		titleLbl.TextSize = 11
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+		titleLbl.TextYAlignment = Enum.TextYAlignment.Center
+		titleLbl.TextWrapped = false
 		titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
 		titleLbl.TextColor3 = THEME.mutedForeground
 		titleLbl.Text = title
 		titleLbl.Parent = row
 
 		local badgeText = Instance.new("TextLabel")
-		badgeText.Size = UDim2.fromOffset(28, 18)
-		badgeText.AnchorPoint = Vector2.new(1, 0.5)
-		badgeText.Position = UDim2.new(1, 0, 0.5, 0)
+		badgeText.LayoutOrder = 2
+		badgeText.Size = UDim2.fromOffset(34, 14)
 		badgeText.BackgroundTransparency = 1
 		badgeText.Font = Enum.Font.GothamSemibold
 		badgeText.TextSize = 10
 		badgeText.TextXAlignment = Enum.TextXAlignment.Right
+		badgeText.TextYAlignment = Enum.TextYAlignment.Center
+		badgeText.TextWrapped = false
 		badgeText.TextColor3 = THEME.mutedForeground
 		badgeText.Text = "OFF"
 		badgeText.Parent = row
