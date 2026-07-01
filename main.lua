@@ -1113,7 +1113,12 @@ local function run()
 		return true
 	end
 
-	local function cachePlotOnStartup()
+	local function performInitialClaim()
+		claimOnceWithRetry()
+		CONFIG._lastClaim = os.clock()
+	end
+
+	local function startupSilentAutoClaim()
 		if not alive then
 			return
 		end
@@ -1125,14 +1130,18 @@ local function run()
 			if not alive then
 				return
 			end
-			if plotButtonHasHandler() and pressPlotButton(true) then
+			if pressPlotButton(true) then
 				break
 			end
 			task.wait(0.25)
 		end
 
 		task.wait(CONFIG.StartupPlotWait)
-		claimOnceWithRetry()
+
+		claiming = true
+		CONFIG._lastClaim = os.clock()
+		performInitialClaim()
+		claiming = false
 	end
 
 	local function doStart()
@@ -1252,8 +1261,8 @@ local function run()
 		claiming = not claiming
 		if claiming then
 			task.spawn(function()
-				claimOnceWithRetry()
 				CONFIG._lastClaim = os.clock()
+				performInitialClaim()
 				refreshStatus()
 			end)
 		end
@@ -1324,7 +1333,7 @@ local function run()
 		end
 	end))
 
-	task.spawn(cachePlotOnStartup)
+	task.spawn(startupSilentAutoClaim)
 
 	refreshStatus()
 end
