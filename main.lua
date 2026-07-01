@@ -130,6 +130,7 @@ local function run()
 	TopBar.Size = UDim2.new(1, 0, 0, HEADER_H)
 	TopBar.BackgroundColor3 = THEME.sidebar
 	TopBar.BorderSizePixel = 0
+	TopBar.Active = true
 	TopBar.Parent = Root
 
 	local TopBarBorder = Instance.new("Frame")
@@ -137,12 +138,14 @@ local function run()
 	TopBarBorder.Position = UDim2.new(0, 0, 1, -1)
 	TopBarBorder.BackgroundColor3 = THEME.border
 	TopBarBorder.BorderSizePixel = 0
+	TopBarBorder.Active = false
 	TopBarBorder.Parent = TopBar
 
 	local TopTitle = Instance.new("TextLabel")
 	TopTitle.Size = UDim2.new(1, -48, 1, 0)
 	TopTitle.Position = UDim2.fromOffset(14, 0)
 	TopTitle.BackgroundTransparency = 1
+	TopTitle.Active = false
 	TopTitle.Font = Enum.Font.GothamSemibold
 	TopTitle.TextSize = 14
 	TopTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -1223,7 +1226,7 @@ local function run()
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
 	local dragging, dragStart, startPos = false, nil, nil
-	TopBar.InputBegan:Connect(function(input)
+	local function beginDrag(input)
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
 			return
 		end
@@ -1233,13 +1236,16 @@ local function run()
 		dragging = true
 		dragStart = input.Position
 		startPos = Root.Position
-	end)
-	TopBar.InputEnded:Connect(function(input)
+	end
+	local function endDrag(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = false
 		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
+	end
+
+	TopBar.InputBegan:Connect(beginDrag)
+	track(UserInputService.InputEnded:Connect(endDrag))
+	track(UserInputService.InputChanged:Connect(function(input)
 		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 			local d = input.Position - dragStart
 			Root.Position = UDim2.new(
@@ -1247,7 +1253,7 @@ local function run()
 				startPos.Y.Scale, startPos.Y.Offset + d.Y
 			)
 		end
-	end)
+	end))
 
 	track(UserInputService.InputBegan:Connect(function(input)
 		if input.UserInputType ~= Enum.UserInputType.Keyboard then
