@@ -128,6 +128,7 @@ local function run()
 	local CONFIG = {
 		AfterStartWait = 0.5,
 		RoundWait = 12,
+		RoundMaxWait = 120,
 		PostFinishWait = 0.25,
 		StartArg = 0,
 		ClaimDelay = 60.0,
@@ -566,6 +567,9 @@ local function run()
 
 	local StartRemote = getBombRE("Start")
 	local ThrowRemote = getBombRE("Throw")
+	local FinishedRemote = getBombRE("Finished")
+	local roundFinished = false
+	local finishedHookInstalled = false
 	local SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
 	local SellInventoryRemote = getKnitRE("SellService", "SellInventory")
 	local cachedBaseName = learnedBaseName
@@ -1013,7 +1017,46 @@ local function run()
 		end
 		StartRemote = StartRemote or getBombRE("Start")
 		ThrowRemote = ThrowRemote or getBombRE("Throw")
+		FinishedRemote = FinishedRemote or getBombRE("Finished")
 		return StartRemote ~= nil and ThrowRemote ~= nil
+	end
+
+	local function installFinishedHook()
+		if finishedHookInstalled then
+			return
+		end
+		if not FinishedRemote then
+			FinishedRemote = getBombRE("Finished")
+		end
+		if not FinishedRemote then
+			return
+		end
+		if not hookfunction then
+			return
+		end
+		pcall(function()
+			local orig
+			orig = hookfunction(FinishedRemote.FireServer, function(self, ...)
+				if rawequal(self, FinishedRemote) then
+					roundFinished = true
+				end
+				return orig(self, ...)
+			end)
+		end)
+		finishedHookInstalled = true
+	end
+
+	local function waitForRoundFinished()
+		installFinishedHook()
+		roundFinished = false
+		local deadline = os.clock() + CONFIG.RoundMaxWait
+		while not roundFinished and os.clock() < deadline do
+			if not alive or not farming then
+				return
+			end
+			task.wait(0.2)
+		end
+		task.wait(CONFIG.PostFinishWait)
 	end
 
 	local function doStart()
@@ -1357,7 +1400,7 @@ local function run()
 			return
 		end
 
-		task.wait(CONFIG.RoundWait)
+		waitForRoundFinished()
 
 		if not alive or not farming then
 			return
@@ -1370,13 +1413,7 @@ local function run()
 		if autoSell then
 			doSellInventory()
 		end
-
-		if CONFIG.PostFinishWait > 0 then
-			task.wait(CONFIG.PostFinishWait)
-		end
 	end
-
-	local function startFarmLoop()
 		if not alive or not farming then
 			return
 		end
