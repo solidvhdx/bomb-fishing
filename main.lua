@@ -1029,38 +1029,12 @@ local function run()
 		return false
 	end
 
-	local function plotButtonReady()
-		local btn = getPlotGuiButton()
-		if not btn or not getconnections then
-			return false
-		end
-		for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-			if conn.Function then
-				return true
-			end
-		end
-		return false
-	end
-
 	local function pressPlotButton()
 		local btn = getPlotGuiButton()
 		if not btn then
 			return false
 		end
 		return pressGuiOnce(btn)
-	end
-
-	local function waitAndPressPlot()
-		for _ = 1, 40 do
-			if not alive then
-				return false
-			end
-			if plotButtonReady() and pressPlotButton() then
-				return true
-			end
-			task.wait(0.25)
-		end
-		return false
 	end
 
 	local function doStart()
@@ -1127,10 +1101,13 @@ local function run()
 		if not alive then
 			return
 		end
-		LocalPlayer:WaitForChild("PlayerGui", 15)
-		waitAndPressPlot()
+		pressPlotButton()
 		task.wait(CONFIG.StartupPlotWait)
-		runAutoClaimOnce()
+		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+		getBasesFolder()
+		resolvePlayerBase()
+		doClaim()
+		CONFIG._lastClaim = os.clock()
 	end
 
 	local function doEquipBest()
