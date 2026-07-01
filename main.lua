@@ -1179,6 +1179,18 @@ local function run()
 		end
 	end
 
+	local function scheduleRebirthUpdate(tryRebirth)
+		task.defer(function()
+			if not alive then
+				return
+			end
+			refreshRebirthRow()
+			if tryRebirth then
+				tryAutoRebirth()
+			end
+		end)
+	end
+
 	local function setupRebirthSystems()
 		loadGameConfig()
 		ReplicatedStorage:WaitForChild("src", 30)
@@ -1223,11 +1235,10 @@ local function run()
 		end
 
 		dataReplica:OnSet({ "Cash" }, function()
-			refreshRebirthRow()
-			tryAutoRebirth()
+			scheduleRebirthUpdate(true)
 		end)
 		dataReplica:OnSet({ "Rebirth" }, function()
-			refreshRebirthRow()
+			scheduleRebirthUpdate(false)
 		end)
 		refreshRebirthRow()
 	end
