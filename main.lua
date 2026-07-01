@@ -993,15 +993,6 @@ local function run()
 		return nil
 	end
 
-	local function getPlotGuiButton()
-		local pg = LocalPlayer:FindFirstChild("PlayerGui")
-		local target = pg and resolveGuiPath(pg, CONFIG.PlotButtonPath)
-		if not target then
-			target = resolveGuiPath(game:GetService("StarterGui"), CONFIG.PlotButtonPath)
-		end
-		return findPlotClickable(target)
-	end
-
 	local function pressGuiOnce(btn)
 		if not btn or not btn:IsA("GuiButton") then
 			return false
@@ -1030,7 +1021,12 @@ local function run()
 	end
 
 	local function pressPlotButton()
-		local btn = getPlotGuiButton()
+		local pg = LocalPlayer:FindFirstChild("PlayerGui")
+		local target = pg and resolveGuiPath(pg, CONFIG.PlotButtonPath)
+		if not target then
+			target = resolveGuiPath(game:GetService("StarterGui"), CONFIG.PlotButtonPath)
+		end
+		local btn = findPlotClickable(target)
 		if not btn then
 			return false
 		end
@@ -1094,19 +1090,6 @@ local function run()
 			resolvePlayerBase()
 			task.wait(0.5)
 		end
-		CONFIG._lastClaim = os.clock()
-	end
-
-	local function runStartupSequence()
-		if not alive then
-			return
-		end
-		pressPlotButton()
-		task.wait(CONFIG.StartupPlotWait)
-		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
-		getBasesFolder()
-		resolvePlayerBase()
-		doClaim()
 		CONFIG._lastClaim = os.clock()
 	end
 
@@ -1220,6 +1203,18 @@ local function run()
 		refreshStatus()
 	end)
 
+	local function startupPlotAndClaim()
+		if not alive then
+			return
+		end
+		pressPlotButton()
+		task.wait(CONFIG.StartupPlotWait)
+		claiming = true
+		runAutoClaimOnce()
+		claiming = false
+		refreshStatus()
+	end
+
 	EquipBtn.MouseButton1Click:Connect(function()
 		equipBest = not equipBest
 		refreshStatus()
@@ -1284,7 +1279,7 @@ local function run()
 		end
 	end))
 
-	task.spawn(runStartupSequence)
+	task.spawn(startupPlotAndClaim)
 
 	refreshStatus()
 end
