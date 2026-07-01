@@ -116,7 +116,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(400, 430)
+	Root.Size = UDim2.fromOffset(400, 360)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -283,138 +283,59 @@ local function run()
 	padding(MainPad, 12, 12, 12, 12)
 
 	local MainLayout = Instance.new("UIListLayout")
-	MainLayout.Padding = UDim.new(0, 10)
+	MainLayout.Padding = UDim.new(0, 4)
 	MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	MainLayout.Parent = MainPad
 
-	local function makeCard(title, order)
+	local function makeStatusCard(title, order)
 		local card = Instance.new("Frame")
 		card.Name = title
 		card.LayoutOrder = order
-		card.Size = UDim2.new(1, 0, 0, 0)
-		card.AutomaticSize = Enum.AutomaticSize.Y
+		card.Size = UDim2.new(1, 0, 0, 24)
 		card.BackgroundColor3 = THEME.card
 		card.BorderSizePixel = 0
 		card.Parent = MainPad
-		corner(card, THEME.radius)
+		corner(card, THEME.radiusSm)
 		stroke(card, THEME.border)
-		padding(card, 12, 12, 12, 12)
-
-		local inner = Instance.new("UIListLayout")
-		inner.Padding = UDim.new(0, 4)
-		inner.SortOrder = Enum.SortOrder.LayoutOrder
-		inner.Parent = card
+		padding(card, 5, 8, 5, 8)
 
 		local titleLbl = Instance.new("TextLabel")
-		titleLbl.LayoutOrder = 1
-		titleLbl.Size = UDim2.new(1, 0, 0, 18)
+		titleLbl.Size = UDim2.new(1, -38, 1, 0)
 		titleLbl.BackgroundTransparency = 1
 		titleLbl.Font = Enum.Font.GothamSemibold
-		titleLbl.TextSize = 14
+		titleLbl.TextSize = 11
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+		titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
 		titleLbl.TextColor3 = THEME.foreground
 		titleLbl.Text = title
 		titleLbl.Parent = card
 
-		return card
+		local badge = Instance.new("Frame")
+		badge.Size = UDim2.fromOffset(32, 14)
+		badge.AnchorPoint = Vector2.new(1, 0.5)
+		badge.Position = UDim2.new(1, 0, 0.5, 0)
+		badge.BackgroundColor3 = THEME.secondary
+		badge.BorderSizePixel = 0
+		badge.Parent = card
+		corner(badge, 4)
+		local badgeStroke = stroke(badge, THEME.border)
+
+		local badgeText = Instance.new("TextLabel")
+		badgeText.Size = UDim2.fromScale(1, 1)
+		badgeText.BackgroundTransparency = 1
+		badgeText.Font = Enum.Font.GothamSemibold
+		badgeText.TextSize = 9
+		badgeText.TextColor3 = THEME.secondaryForeground
+		badgeText.Text = "OFF"
+		badgeText.Parent = badge
+
+		return badge, badgeText, badgeStroke
 	end
 
-	local StatusCard = makeCard("Auto Farm", 1)
-
-	local StatusRow = Instance.new("Frame")
-	StatusRow.LayoutOrder = 2
-	StatusRow.Size = UDim2.new(1, 0, 0, 28)
-	StatusRow.BackgroundTransparency = 1
-	StatusRow.Parent = StatusCard
-
-	local Badge = Instance.new("Frame")
-	Badge.Size = UDim2.fromOffset(52, 24)
-	Badge.BackgroundColor3 = THEME.secondary
-	Badge.BorderSizePixel = 0
-	Badge.Parent = StatusRow
-	corner(Badge, THEME.radiusSm)
-	local BadgeStroke = stroke(Badge, THEME.border)
-
-	local BadgeText = Instance.new("TextLabel")
-	BadgeText.Size = UDim2.fromScale(1, 1)
-	BadgeText.BackgroundTransparency = 1
-	BadgeText.Font = Enum.Font.GothamSemibold
-	BadgeText.TextSize = 11
-	BadgeText.TextColor3 = THEME.secondaryForeground
-	BadgeText.Text = "OFF"
-	BadgeText.Parent = Badge
-
-	local ClaimCard = makeCard("Auto Claim", 2)
-	local ClaimRow = Instance.new("Frame")
-	ClaimRow.LayoutOrder = 2
-	ClaimRow.Size = UDim2.new(1, 0, 0, 28)
-	ClaimRow.BackgroundTransparency = 1
-	ClaimRow.Parent = ClaimCard
-
-	local ClaimBadge = Instance.new("Frame")
-	ClaimBadge.Size = UDim2.fromOffset(52, 24)
-	ClaimBadge.BackgroundColor3 = THEME.secondary
-	ClaimBadge.BorderSizePixel = 0
-	ClaimBadge.Parent = ClaimRow
-	corner(ClaimBadge, THEME.radiusSm)
-	local ClaimBadgeStroke = stroke(ClaimBadge, THEME.border)
-
-	local ClaimBadgeText = Instance.new("TextLabel")
-	ClaimBadgeText.Size = UDim2.fromScale(1, 1)
-	ClaimBadgeText.BackgroundTransparency = 1
-	ClaimBadgeText.Font = Enum.Font.GothamSemibold
-	ClaimBadgeText.TextSize = 11
-	ClaimBadgeText.TextColor3 = THEME.secondaryForeground
-	ClaimBadgeText.Text = "OFF"
-	ClaimBadgeText.Parent = ClaimBadge
-
-	local EquipCard = makeCard("Auto Equip Best", 3)
-	local EquipRow = Instance.new("Frame")
-	EquipRow.LayoutOrder = 2
-	EquipRow.Size = UDim2.new(1, 0, 0, 28)
-	EquipRow.BackgroundTransparency = 1
-	EquipRow.Parent = EquipCard
-
-	local EquipBadge = Instance.new("Frame")
-	EquipBadge.Size = UDim2.fromOffset(52, 24)
-	EquipBadge.BackgroundColor3 = THEME.secondary
-	EquipBadge.BorderSizePixel = 0
-	EquipBadge.Parent = EquipRow
-	corner(EquipBadge, THEME.radiusSm)
-	local EquipBadgeStroke = stroke(EquipBadge, THEME.border)
-
-	local EquipBadgeText = Instance.new("TextLabel")
-	EquipBadgeText.Size = UDim2.fromScale(1, 1)
-	EquipBadgeText.BackgroundTransparency = 1
-	EquipBadgeText.Font = Enum.Font.GothamSemibold
-	EquipBadgeText.TextSize = 11
-	EquipBadgeText.TextColor3 = THEME.secondaryForeground
-	EquipBadgeText.Text = "OFF"
-	EquipBadgeText.Parent = EquipBadge
-
-	local SellCard = makeCard("Auto Sell Inventory", 4)
-	local SellRow = Instance.new("Frame")
-	SellRow.LayoutOrder = 2
-	SellRow.Size = UDim2.new(1, 0, 0, 28)
-	SellRow.BackgroundTransparency = 1
-	SellRow.Parent = SellCard
-
-	local SellBadge = Instance.new("Frame")
-	SellBadge.Size = UDim2.fromOffset(52, 24)
-	SellBadge.BackgroundColor3 = THEME.secondary
-	SellBadge.BorderSizePixel = 0
-	SellBadge.Parent = SellRow
-	corner(SellBadge, THEME.radiusSm)
-	local SellBadgeStroke = stroke(SellBadge, THEME.border)
-
-	local SellBadgeText = Instance.new("TextLabel")
-	SellBadgeText.Size = UDim2.fromScale(1, 1)
-	SellBadgeText.BackgroundTransparency = 1
-	SellBadgeText.Font = Enum.Font.GothamSemibold
-	SellBadgeText.TextSize = 11
-	SellBadgeText.TextColor3 = THEME.secondaryForeground
-	SellBadgeText.Text = "OFF"
-	SellBadgeText.Parent = SellBadge
+	local Badge, BadgeText, BadgeStroke = makeStatusCard("Auto Farm", 1)
+	local ClaimBadge, ClaimBadgeText, ClaimBadgeStroke = makeStatusCard("Auto Claim", 2)
+	local EquipBadge, EquipBadgeText, EquipBadgeStroke = makeStatusCard("Auto Equip Best", 3)
+	local SellBadge, SellBadgeText, SellBadgeStroke = makeStatusCard("Auto Sell Inventory", 4)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
