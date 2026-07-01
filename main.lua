@@ -99,6 +99,7 @@ local function run()
 	local farming = false
 	local claiming = false
 	local equipBest = false
+	local autoSell = false
 	local guiVisible = true
 	local farmLoopRunning = false
 
@@ -115,7 +116,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(400, 360)
+	Root.Size = UDim2.fromOffset(400, 430)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -265,6 +266,7 @@ local function run()
 	local FarmBtn = makeNavItem("Auto Farm", 1)
 	local ClaimBtn = makeNavItem("Auto Claim", 2)
 	local EquipBtn = makeNavItem("Auto Equip Best", 3)
+	local SellBtn = makeNavItem("Auto Sell Inventory", 4)
 
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
@@ -389,6 +391,30 @@ local function run()
 	EquipBadgeText.TextColor3 = THEME.secondaryForeground
 	EquipBadgeText.Text = "OFF"
 	EquipBadgeText.Parent = EquipBadge
+
+	local SellCard = makeCard("Auto Sell Inventory", 4)
+	local SellRow = Instance.new("Frame")
+	SellRow.LayoutOrder = 2
+	SellRow.Size = UDim2.new(1, 0, 0, 28)
+	SellRow.BackgroundTransparency = 1
+	SellRow.Parent = SellCard
+
+	local SellBadge = Instance.new("Frame")
+	SellBadge.Size = UDim2.fromOffset(52, 24)
+	SellBadge.BackgroundColor3 = THEME.secondary
+	SellBadge.BorderSizePixel = 0
+	SellBadge.Parent = SellRow
+	corner(SellBadge, THEME.radiusSm)
+	local SellBadgeStroke = stroke(SellBadge, THEME.border)
+
+	local SellBadgeText = Instance.new("TextLabel")
+	SellBadgeText.Size = UDim2.fromScale(1, 1)
+	SellBadgeText.BackgroundTransparency = 1
+	SellBadgeText.Font = Enum.Font.GothamSemibold
+	SellBadgeText.TextSize = 11
+	SellBadgeText.TextColor3 = THEME.secondaryForeground
+	SellBadgeText.Text = "OFF"
+	SellBadgeText.Parent = SellBadge
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -600,6 +626,7 @@ local function run()
 	local StartRemote = getBombRE("Start")
 	local ThrowRemote = getBombRE("Throw")
 	local SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
+	local SellInventoryRemote = getKnitRE("SellService", "SellInventory")
 	local cachedBaseName = learnedBaseName
 
 	local function setLearnedBase(name)
@@ -613,6 +640,7 @@ local function run()
 		StartRemote = StartRemote or getBombRE("Start")
 		ThrowRemote = ThrowRemote or getBombRE("Throw")
 		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+		SellInventoryRemote = SellInventoryRemote or getKnitRE("SellService", "SellInventory")
 
 		local remote = SendTagDataRemote
 		if remote and hookfunction then
@@ -1107,6 +1135,20 @@ local function run()
 		return true
 	end
 
+	local function doSellInventory()
+		if not alive or not farming or not autoSell then
+			return false
+		end
+		if not SellInventoryRemote then
+			SellInventoryRemote = getKnitRE("SellService", "SellInventory")
+		end
+		if not SellInventoryRemote then
+			return false
+		end
+		SellInventoryRemote:FireServer()
+		return true
+	end
+
 	local function doFarmCycle()
 		if not alive or not farming then
 			return
@@ -1129,8 +1171,16 @@ local function run()
 
 		task.wait(CONFIG.RoundWait)
 
-		if equipBest and farming and alive then
+		if not alive or not farming then
+			return
+		end
+
+		if equipBest then
 			doEquipBest()
+		end
+
+		if autoSell then
+			doSellInventory()
 		end
 
 		if CONFIG.PostFinishWait > 0 then
@@ -1177,9 +1227,11 @@ local function run()
 		setBadge(farming, Badge, BadgeText, BadgeStroke)
 		setBadge(claiming, ClaimBadge, ClaimBadgeText, ClaimBadgeStroke)
 		setBadge(equipBest, EquipBadge, EquipBadgeText, EquipBadgeStroke)
+		setBadge(autoSell, SellBadge, SellBadgeText, SellBadgeStroke)
 		setNavActive("Auto Farm", farming)
 		setNavActive("Auto Claim", claiming)
 		setNavActive("Auto Equip Best", equipBest)
+		setNavActive("Auto Sell Inventory", autoSell)
 	end
 
 	local function toggleAutoClaim()
@@ -1216,6 +1268,11 @@ local function run()
 
 	EquipBtn.MouseButton1Click:Connect(function()
 		equipBest = not equipBest
+		refreshStatus()
+	end)
+
+	SellBtn.MouseButton1Click:Connect(function()
+		autoSell = not autoSell
 		refreshStatus()
 	end)
 
