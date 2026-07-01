@@ -103,8 +103,14 @@ local function run()
 	local claimCage = false
 	local equipBest = false
 	local autoSell = false
+	local autoRebirth = false
 	local guiVisible = true
 	local farmGeneration = 0
+	local farmCycleBusy = false
+	local lastRebirthFire = 0
+	local dataReplica = nil
+	local RebirthServiceClient = nil
+	local GameConfig = nil
 
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "BombFishingFarm"
@@ -119,7 +125,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(300, 248)
+	Root.Size = UDim2.fromOffset(300, 278)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -201,7 +207,8 @@ local function run()
 
 	local toggleRows = {}
 
-	local function makeToggleRow(label, order)
+	local function makeToggleRow(label, order, statusWidth)
+		statusWidth = statusWidth or 34
 		local btn = Instance.new("TextButton")
 		btn.Name = label
 		btn.LayoutOrder = order
@@ -216,7 +223,7 @@ local function run()
 		stroke(btn, THEME.border)
 
 		local labelLbl = Instance.new("TextLabel")
-		labelLbl.Size = UDim2.new(1, -40, 1, 0)
+		labelLbl.Size = UDim2.new(1, -(statusWidth + 6), 1, 0)
 		labelLbl.Position = UDim2.fromOffset(10, 0)
 		labelLbl.BackgroundTransparency = 1
 		labelLbl.Font = Enum.Font.GothamSemibold
@@ -229,7 +236,7 @@ local function run()
 		labelLbl.Parent = btn
 
 		local statusLbl = Instance.new("TextLabel")
-		statusLbl.Size = UDim2.fromOffset(34, 30)
+		statusLbl.Size = UDim2.fromOffset(statusWidth, 30)
 		statusLbl.AnchorPoint = Vector2.new(1, 0.5)
 		statusLbl.Position = UDim2.new(1, -8, 0.5, 0)
 		statusLbl.BackgroundTransparency = 1
@@ -263,6 +270,7 @@ local function run()
 	local CageBtn, CageBadgeText = makeToggleRow("Auto Claim Cage", 3)
 	local EquipBtn, EquipBadgeText = makeToggleRow("Auto Equip Best", 4)
 	local SellBtn, SellBadgeText = makeToggleRow("Auto Sell Inventory", 5)
+	local RebirthBtn, RebirthBadgeText = makeToggleRow("Auto Rebirth", 6, 44)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -423,6 +431,7 @@ local function run()
 		farming = false
 		claiming = false
 		claimCage = false
+		autoRebirth = false
 		pcall(function()
 			ContextActionService:UnbindAction(TOGGLE_ACTION)
 		end)
@@ -1063,6 +1072,166 @@ local function run()
 		return true
 	end
 
+	local function loadGameConfig()
+		if GameConfig then
+			return true
+		end
+		local configModule = ReplicatedStorage:FindFirstChild("Config")
+		if not configModule then
+			return false
+		end
+		local ok, cfg = pcall(require, configModule)
+		if ok and cfg then
+			GameConfig = cfg
+			return true
+		end
+		return false
+	end
+
+	local function getRebirthInfo()
+		if not dataReplica or not dataReplica.Data then
+			return nil
+		end
+		loadGameConfig()
+		if not GameConfig or not GameConfig.Rebirth then
+			return nil
+		end
+
+		local rebirth = dataReplica.Data.Rebirth or 0
+		local cash = dataReplica.Data.Cash or 0
+		local nextTier = GameConfig.Rebirth.Rebirths[rebirth + 1]
+
+		if not nextTier then
+			return {
+				rebirth = rebirth,
+				cash = cash,
+				maxed = true,
+				canRebirth = false,
+			}
+		end
+
+		local needed = nextTier.Requirements.Cash
+		return {
+			rebirth = rebirth,
+			cash = cash,
+			needed = needed,
+			maxed = false,
+			canRebirth = cash >= needed,
+		}
+	end
+
+	local function tryAutoRebirth()
+		if not alive or not autoRebirth then
+			return false
+		end
+		if farmCycleBusy then
+			return false
+		end
+		if os.clock() - lastRebirthFire < 1 then
+			return false
+		end
+
+		local info = getRebirthInfo()
+		if not info or info.maxed or not info.canRebirth then
+			return false
+		end
+		if not RebirthServiceClient or not RebirthServiceClient.Rebirth then
+			return false
+		end
+
+		RebirthServiceClient.Rebirth:Fire()
+		lastRebirthFire = os.clock()
+		return true
+	end
+
+	local function refreshRebirthRow()
+		local row = toggleRows["Auto Rebirth"]
+		if not row then
+			return
+		end
+
+		if not autoRebirth then
+			row.btn:SetAttribute("Active", false)
+			row.btn.BackgroundColor3 = THEME.card
+			row.status.Text = "OFF"
+			row.status.TextColor3 = THEME.mutedForeground
+			return
+		end
+
+		row.btn:SetAttribute("Active", true)
+		row.btn.BackgroundColor3 = THEME.sidebarAccent
+
+		local info = getRebirthInfo()
+		if not info then
+			row.status.Text = "..."
+			row.status.TextColor3 = THEME.mutedForeground
+			return
+		end
+		if info.maxed then
+			row.status.Text = "MAX"
+			row.status.TextColor3 = THEME.mutedForeground
+		elseif info.canRebirth then
+			row.status.Text = "READY"
+			row.status.TextColor3 = THEME.success
+		else
+			row.status.Text = "R" .. tostring(info.rebirth)
+			row.status.TextColor3 = THEME.mutedForeground
+		end
+	end
+
+	local function setupRebirthSystems()
+		loadGameConfig()
+		ReplicatedStorage:WaitForChild("src", 30)
+		loadGameConfig()
+
+		local okKnit, KnitClient = pcall(function()
+			return require(ReplicatedStorage.src.Modules.KnitClient)
+		end)
+		if not okKnit or not KnitClient then
+			return
+		end
+
+		for _ = 1, 120 do
+			if not alive then
+				return
+			end
+
+			local okDc, dc = pcall(function()
+				return KnitClient.GetController("DataController")
+			end)
+			if okDc and dc then
+				local okRep, rep = pcall(function()
+					return dc:getDataReplica(true)
+				end)
+				if okRep and rep and rep.Data then
+					dataReplica = rep
+					local okSvc, svc = pcall(function()
+						return KnitClient.GetService("RebirthService")
+					end)
+					if okSvc then
+						RebirthServiceClient = svc
+					end
+					break
+				end
+			end
+
+			task.wait(0.5)
+		end
+
+		if not dataReplica then
+			return
+		end
+
+		dataReplica:OnSet({ "Cash" }, function()
+			refreshRebirthRow()
+			tryAutoRebirth()
+		end)
+		dataReplica:OnSet({ "Rebirth" }, function()
+			refreshRebirthRow()
+		end)
+		refreshRebirthRow()
+	end
+
 	local function doFarmCycle()
 		if not alive or not farming then
 			return
@@ -1110,7 +1279,12 @@ local function run()
 		local generation = farmGeneration
 		task.spawn(function()
 			while alive and farming and farmGeneration == generation do
+				farmCycleBusy = true
 				local ok, err = pcall(doFarmCycle)
+				farmCycleBusy = false
+				if autoRebirth then
+					tryAutoRebirth()
+				end
 				if not ok then
 					warn("[Bomb Fishing] farm cycle error:", err)
 					task.wait(2)
@@ -1143,6 +1317,7 @@ local function run()
 		setRowActive("Auto Claim Cage", claimCage)
 		setRowActive("Auto Equip Best", equipBest)
 		setRowActive("Auto Sell Inventory", autoSell)
+		refreshRebirthRow()
 	end
 
 	local function toggleAutoClaim()
@@ -1200,6 +1375,14 @@ local function run()
 		refreshStatus()
 	end)
 
+	RebirthBtn.MouseButton1Click:Connect(function()
+		autoRebirth = not autoRebirth
+		refreshStatus()
+		if autoRebirth then
+			tryAutoRebirth()
+		end
+	end)
+
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
 	track(UserInputService.InputBegan:Connect(function(input)
@@ -1238,6 +1421,7 @@ local function run()
 	end))
 
 	task.spawn(startupPlotAndClaim)
+	task.spawn(setupRebirthSystems)
 
 	refreshStatus()
 end
