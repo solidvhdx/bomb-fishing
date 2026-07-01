@@ -103,6 +103,7 @@ local function run()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
+	local VirtualUser = game:GetService("VirtualUser")
 	local TweenService = game:GetService("TweenService")
 	local ContextActionService = game:GetService("ContextActionService")
 	local CollectionService = game:GetService("CollectionService")
@@ -143,6 +144,8 @@ local function run()
 	local autoSell = false
 	local autoRebirth = false
 	local no3dRender = false
+	local antiAfk = false
+	local antiAfkConn = nil
 	local guiVisible = true
 	local farmGeneration = 0
 	local farmCycleBusy = false
@@ -166,7 +169,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(300, 322)
+	Root.Size = UDim2.fromOffset(300, 354)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -345,6 +348,7 @@ local function run()
 	local SellBtn, SellBadgeText = makeToggleRow("Auto Sell Inventory", 5)
 	local RebirthBtn, RebirthBadgeText = makeToggleRow("Auto Rebirth", 6, 44)
 	local No3dBtn, No3dBadgeText = makeToggleRow("No 3D Render", 7, 44)
+	local AntiAfkBtn, AntiAfkBadgeText = makeToggleRow("Anti AFK", 8, 44)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -504,6 +508,24 @@ local function run()
 		end)
 	end
 
+	local function applyAntiAfk(enabled)
+		if antiAfkConn then
+			pcall(function()
+				antiAfkConn:Disconnect()
+			end)
+			antiAfkConn = nil
+		end
+		if not enabled then
+			return
+		end
+		antiAfkConn = LocalPlayer.Idled:Connect(function()
+			pcall(function()
+				VirtualUser:CaptureController()
+				VirtualUser:ClickButton2(Vector2.new())
+			end)
+		end)
+	end
+
 	local function shutdownScript()
 		if not alive then
 			return
@@ -513,6 +535,7 @@ local function run()
 		claiming = false
 		claimCage = false
 		autoRebirth = false
+		applyAntiAfk(false)
 		pcall(function()
 			RunService:Set3dRenderingEnabled(true)
 		end)
@@ -1492,6 +1515,7 @@ local function run()
 			setRowActive("Auto Rebirth", false)
 		end
 		setRowActive("No 3D Render", no3dRender)
+		setRowActive("Anti AFK", antiAfk)
 	end
 
 	local function startupPlotAndClaim()
@@ -1560,6 +1584,10 @@ local function run()
 	wireToggle("No 3D Render", function()
 		no3dRender = not no3dRender
 		applyNo3dRender(no3dRender)
+	end)
+	wireToggle("Anti AFK", function()
+		antiAfk = not antiAfk
+		applyAntiAfk(antiAfk)
 	end)
 
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
