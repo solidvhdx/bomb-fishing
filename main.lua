@@ -1,4 +1,4 @@
-local function protectGui(gui)
+﻿local function protectGui(gui)
 	pcall(function()
 		if protect_gui then protect_gui(gui) end
 	end)
