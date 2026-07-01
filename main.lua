@@ -161,7 +161,8 @@ local function run()
 	CloseBtn.Font = Enum.Font.GothamBold
 	CloseBtn.TextSize = 14
 	CloseBtn.TextColor3 = THEME.mutedForeground
-	CloseBtn.Text = "├ù"
+	CloseBtn.Text = "X"
+	CloseBtn.ZIndex = 2
 	CloseBtn.Parent = TopBar
 	corner(CloseBtn, THEME.radiusSm)
 	stroke(CloseBtn, THEME.border)
@@ -179,7 +180,8 @@ local function run()
 		}):Play()
 	end)
 
-	local Body = Instance.new("Frame")	Body.Name = "Body"
+	local Body = Instance.new("Frame")
+	Body.Name = "Body"
 	Body.Size = UDim2.new(1, 0, 1, -(HEADER_H + FOOTER_H))
 	Body.Position = UDim2.fromOffset(0, HEADER_H)
 	Body.BackgroundTransparency = 1
@@ -574,7 +576,7 @@ local function run()
 	ConfirmCancel.MouseButton1Click:Connect(hideCloseConfirm)
 	ConfirmClose.MouseButton1Click:Connect(shutdownScript)
 	ConfirmOverlay.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Target == ConfirmOverlay then
 			hideCloseConfirm()
 		end
 	end)
@@ -1224,11 +1226,15 @@ local function run()
 
 	local dragging, dragStart, startPos = false, nil, nil
 	TopBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			dragStart = input.Position
-			startPos = Root.Position
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+			return
 		end
+		if input.Target == CloseBtn then
+			return
+		end
+		dragging = true
+		dragStart = input.Position
+		startPos = Root.Position
 	end)
 	TopBar.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
