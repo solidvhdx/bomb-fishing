@@ -98,6 +98,7 @@ local function run()
 
 	local farming = false
 	local claiming = false
+	local equipBest = false
 	local guiVisible = true
 	local farmLoopRunning = false
 
@@ -114,7 +115,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(400, 280)
+	Root.Size = UDim2.fromOffset(400, 360)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -124,7 +125,8 @@ local function run()
 	corner(Root, THEME.radius)
 	stroke(Root, THEME.border)
 
-	local TopBar = Instance.new("Frame")	TopBar.Name = "TopBar"
+	local TopBar = Instance.new("Frame")
+	TopBar.Name = "TopBar"
 	TopBar.Size = UDim2.new(1, 0, 0, HEADER_H)
 	TopBar.BackgroundColor3 = THEME.sidebar
 	TopBar.BorderSizePixel = 0
@@ -261,6 +263,7 @@ local function run()
 
 	local FarmBtn = makeNavItem("Auto Farm", 1)
 	local ClaimBtn = makeNavItem("Auto Claim", 2)
+	local EquipBtn = makeNavItem("Auto Equip Best", 3)
 
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
@@ -362,7 +365,32 @@ local function run()
 	ClaimBadgeText.Text = "OFF"
 	ClaimBadgeText.Parent = ClaimBadge
 
-	local Footer = Instance.new("Frame")	Footer.Name = "Footer"
+	local EquipCard = makeCard("Auto Equip Best", 3)
+	local EquipRow = Instance.new("Frame")
+	EquipRow.LayoutOrder = 2
+	EquipRow.Size = UDim2.new(1, 0, 0, 28)
+	EquipRow.BackgroundTransparency = 1
+	EquipRow.Parent = EquipCard
+
+	local EquipBadge = Instance.new("Frame")
+	EquipBadge.Size = UDim2.fromOffset(52, 24)
+	EquipBadge.BackgroundColor3 = THEME.secondary
+	EquipBadge.BorderSizePixel = 0
+	EquipBadge.Parent = EquipRow
+	corner(EquipBadge, THEME.radiusSm)
+	local EquipBadgeStroke = stroke(EquipBadge, THEME.border)
+
+	local EquipBadgeText = Instance.new("TextLabel")
+	EquipBadgeText.Size = UDim2.fromScale(1, 1)
+	EquipBadgeText.BackgroundTransparency = 1
+	EquipBadgeText.Font = Enum.Font.GothamSemibold
+	EquipBadgeText.TextSize = 11
+	EquipBadgeText.TextColor3 = THEME.secondaryForeground
+	EquipBadgeText.Text = "OFF"
+	EquipBadgeText.Parent = EquipBadge
+
+	local Footer = Instance.new("Frame")
+	Footer.Name = "Footer"
 	Footer.Size = UDim2.new(1, 0, 0, FOOTER_H)
 	Footer.Position = UDim2.new(0, 0, 1, -FOOTER_H)
 	Footer.BackgroundColor3 = THEME.sidebar
@@ -589,7 +617,7 @@ local function run()
 			local oldFire
 			pcall(function()
 				oldFire = hookfunction(remote.FireServer, function(self, tag, obj, ...)
-					if rawequal(self, remote) and tag == "Collect" and obj then
+					if rawequal(self, remote) and obj and type(tag) == "string" then
 						local bases = workspace:FindFirstChild("Bases")
 						if bases and obj:IsDescendantOf(bases) then
 							local current = obj
@@ -638,6 +666,12 @@ local function run()
 		local floor1 = base:FindFirstChild("Floor1")
 		local interactables = floor1 and floor1:FindFirstChild("Interactables")
 		return interactables and interactables:FindFirstChild("Collect")
+	end
+
+	local function getAquariumInBase(base)
+		local floor1 = base:FindFirstChild("Floor1")
+		local interactables = floor1 and floor1:FindFirstChild("Interactables")
+		return interactables and interactables:FindFirstChild("Aquarium")
 	end
 
 	local function getWorldPosition(inst)
@@ -926,7 +960,8 @@ local function run()
 		return nil
 	end
 
-	local function doStart()		if not StartRemote then StartRemote = getBombRE("Start") end
+	local function doStart()
+		if not StartRemote then StartRemote = getBombRE("Start") end
 		if not StartRemote then return false end
 		StartRemote:FireServer(CONFIG.StartArg)
 		return true
@@ -960,6 +995,10 @@ local function run()
 		end
 
 		task.wait(CONFIG.RoundWait)
+
+		if equipBest and farming and alive then
+			doEquipBest()
+		end
 
 		if CONFIG.PostFinishWait > 0 then
 			task.wait(CONFIG.PostFinishWait)
@@ -995,6 +1034,23 @@ local function run()
 		return true
 	end
 
+	local function doEquipBest()
+		if not alive or not farming or not equipBest then
+			return false
+		end
+		if not SendTagDataRemote then
+			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
+		end
+		local bases = getBasesFolder()
+		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
+		local aquarium = base and getAquariumInBase(base)
+		if not SendTagDataRemote or not aquarium then
+			return false
+		end
+		SendTagDataRemote:FireServer("Aquarium", aquarium, "equipBest")
+		return true
+	end
+
 	local function setBadge(on, badge, badgeText, badgeStroke)
 		if on then
 			badgeText.Text = "ON"
@@ -1020,8 +1076,10 @@ local function run()
 	local function refreshStatus()
 		setBadge(farming, Badge, BadgeText, BadgeStroke)
 		setBadge(claiming, ClaimBadge, ClaimBadgeText, ClaimBadgeStroke)
+		setBadge(equipBest, EquipBadge, EquipBadgeText, EquipBadgeStroke)
 		setNavActive("Auto Farm", farming)
 		setNavActive("Auto Claim", claiming)
+		setNavActive("Auto Equip Best", equipBest)
 	end
 
 	FarmBtn.MouseButton1Click:Connect(function()
@@ -1056,9 +1114,15 @@ local function run()
 		refreshStatus()
 	end)
 
+	EquipBtn.MouseButton1Click:Connect(function()
+		equipBest = not equipBest
+		refreshStatus()
+	end)
+
 	CloseBtn.MouseButton1Click:Connect(showCloseConfirm)
 
-	local dragging, dragStart, startPos = false, nil, nil	TopBar.InputBegan:Connect(function(input)
+	local dragging, dragStart, startPos = false, nil, nil
+	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = true
 			dragStart = input.Position
