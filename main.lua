@@ -94,7 +94,7 @@ local function run()
 		StartArg = 0,
 		ClaimDelay = 60.0,
 		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
-		StartupPlotWait = 1,
+		StartupPlotWait = 3,
 		_lastClaim = 0,
 	}
 
@@ -1020,33 +1020,37 @@ local function run()
 		return false
 	end
 
-	local function pressPlotButton()
+	local function getPlotGuiButton()
 		local pg = LocalPlayer:FindFirstChild("PlayerGui")
 		local target = pg and resolveGuiPath(pg, CONFIG.PlotButtonPath)
 		if not target then
-			local starterGui = game:GetService("StarterGui")
-			target = resolveGuiPath(starterGui, CONFIG.PlotButtonPath)
+			target = resolveGuiPath(game:GetService("StarterGui"), CONFIG.PlotButtonPath)
 		end
-		local btn = findPlotClickable(target)
+		return findPlotClickable(target)
+	end
+
+	local function plotButtonHasHandler()
+		local btn = getPlotGuiButton()
+		if not btn or not getconnections then
+			return false
+		end
+		for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+			if conn.Function then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function pressPlotButton(requireHandler)
+		local btn = getPlotGuiButton()
 		if not btn then
 			return false
 		end
-		return pressGuiOnce(btn)
-	end
-
-	local function waitForPlotGui(maxSeconds)
-		local deadline = os.clock() + maxSeconds
-		while os.clock() < deadline do
-			if not alive then
-				return false
-			end
-			local pg = LocalPlayer:FindFirstChild("PlayerGui")
-			if pg and resolveGuiPath(pg, CONFIG.PlotButtonPath) then
-				return true
-			end
-			task.wait(0.25)
+		if requireHandler and not plotButtonHasHandler() then
+			return false
 		end
-		return false
+		return pressGuiOnce(btn)
 	end
 
 	local function waitForSendTagDataRemote(maxSeconds)
@@ -1067,22 +1071,29 @@ local function run()
 		return SendTagDataRemote
 	end
 
-	local function tryResolveBaseForClaim(maxSeconds)
-		local deadline = os.clock() + maxSeconds
-		while os.clock() < deadline do
+	local function claimOnceWithRetry()
+		waitForSendTagDataRemote(20)
+		getBasesFolder(15)
+		for _ = 1, 15 do
 			if not alive then
-				return nil
+				return false
 			end
-			local bases = getBasesFolder()
-			if bases then
-				local base = resolvePlayerBase()
-				if base and getCollectInBase(base) then
-					return base
-				end
+			if resolvePlayerBase() then
+				break
 			end
-			task.wait(0.25)
+			task.wait(0.5)
 		end
-		return nil
+		for _ = 1, 8 do
+			if not alive then
+				return false
+			end
+			if doClaim() then
+				return true
+			end
+			resolvePlayerBase()
+			task.wait(0.5)
+		end
+		return false
 	end
 
 	local function doClaim()
@@ -1108,39 +1119,20 @@ local function run()
 		end
 
 		LocalPlayer:WaitForChild("PlayerGui", 15)
-		waitForPlotGui(10)
-		waitForSendTagDataRemote(20)
-		getBasesFolder(15)
+		ReplicatedStorage:WaitForChild("src", 20)
 
-		local plotPressed = false
-		for _ = 1, 20 do
+		for _ = 1, 40 do
 			if not alive then
 				return
 			end
-			if pressPlotButton() then
-				plotPressed = true
+			if plotButtonHasHandler() and pressPlotButton(true) then
 				break
 			end
 			task.wait(0.25)
 		end
 
 		task.wait(CONFIG.StartupPlotWait)
-
-		local resolveSeconds = plotPressed and 10 or 3
-		tryResolveBaseForClaim(resolveSeconds)
-
-		for _ = 1, 12 do
-			if not alive then
-				return
-			end
-			if doClaim() then
-				break
-			end
-			resolvePlayerBase()
-			task.wait(0.5)
-		end
-
-		resolvePlayerBase()
+		claimOnceWithRetry()
 	end
 
 	local function doStart()
@@ -1260,29 +1252,7 @@ local function run()
 		claiming = not claiming
 		if claiming then
 			task.spawn(function()
-				waitForSendTagDataRemote(20)
-				getBasesFolder(15)
-				if not cachedBaseName then
-					for _ = 1, 15 do
-						if not alive then
-							return
-						end
-						if resolvePlayerBase() then
-							break
-						end
-						task.wait(0.5)
-					end
-				end
-				if not alive then
-					return
-				end
-				for _ = 1, 6 do
-					if doClaim() then
-						break
-					end
-					resolvePlayerBase()
-					task.wait(0.5)
-				end
+				claimOnceWithRetry()
 				CONFIG._lastClaim = os.clock()
 				refreshStatus()
 			end)
