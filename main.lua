@@ -116,7 +116,7 @@ local function run()
 
 	local Root = Instance.new("Frame")
 	Root.Name = "Root"
-	Root.Size = UDim2.fromOffset(400, 360)
+	Root.Size = UDim2.fromOffset(400, 300)
 	Root.Position = UDim2.new(0, 24, 0.15, 0)
 	Root.BackgroundColor3 = THEME.background
 	Root.BorderSizePixel = 0
@@ -124,7 +124,6 @@ local function run()
 	Root.ClipsDescendants = true
 	Root.Parent = ScreenGui
 	corner(Root, THEME.radius)
-	stroke(Root, THEME.border)
 
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
@@ -280,62 +279,51 @@ local function run()
 	MainPad.Size = UDim2.new(1, 0, 1, 0)
 	MainPad.BackgroundTransparency = 1
 	MainPad.Parent = Main
-	padding(MainPad, 12, 12, 12, 12)
+	padding(MainPad, 8, 10, 8, 10)
 
 	local MainLayout = Instance.new("UIListLayout")
-	MainLayout.Padding = UDim.new(0, 4)
+	MainLayout.Padding = UDim.new(0, 2)
 	MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	MainLayout.Parent = MainPad
 
-	local function makeStatusCard(title, order)
-		local card = Instance.new("Frame")
-		card.Name = title
-		card.LayoutOrder = order
-		card.Size = UDim2.new(1, 0, 0, 24)
-		card.BackgroundColor3 = THEME.card
-		card.BorderSizePixel = 0
-		card.Parent = MainPad
-		corner(card, THEME.radiusSm)
-		stroke(card, THEME.border)
-		padding(card, 5, 8, 5, 8)
+	local function makeStatusRow(title, order)
+		local row = Instance.new("Frame")
+		row.Name = title
+		row.LayoutOrder = order
+		row.Size = UDim2.new(1, 0, 0, 18)
+		row.BackgroundTransparency = 1
+		row.Parent = MainPad
 
 		local titleLbl = Instance.new("TextLabel")
-		titleLbl.Size = UDim2.new(1, -38, 1, 0)
+		titleLbl.Size = UDim2.new(1, -30, 1, 0)
 		titleLbl.BackgroundTransparency = 1
-		titleLbl.Font = Enum.Font.GothamSemibold
+		titleLbl.Font = Enum.Font.Gotham
 		titleLbl.TextSize = 11
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 		titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
-		titleLbl.TextColor3 = THEME.foreground
+		titleLbl.TextColor3 = THEME.mutedForeground
 		titleLbl.Text = title
-		titleLbl.Parent = card
-
-		local badge = Instance.new("Frame")
-		badge.Size = UDim2.fromOffset(32, 14)
-		badge.AnchorPoint = Vector2.new(1, 0.5)
-		badge.Position = UDim2.new(1, 0, 0.5, 0)
-		badge.BackgroundColor3 = THEME.secondary
-		badge.BorderSizePixel = 0
-		badge.Parent = card
-		corner(badge, 4)
-		local badgeStroke = stroke(badge, THEME.border)
+		titleLbl.Parent = row
 
 		local badgeText = Instance.new("TextLabel")
-		badgeText.Size = UDim2.fromScale(1, 1)
+		badgeText.Size = UDim2.fromOffset(28, 18)
+		badgeText.AnchorPoint = Vector2.new(1, 0.5)
+		badgeText.Position = UDim2.new(1, 0, 0.5, 0)
 		badgeText.BackgroundTransparency = 1
 		badgeText.Font = Enum.Font.GothamSemibold
-		badgeText.TextSize = 9
-		badgeText.TextColor3 = THEME.secondaryForeground
+		badgeText.TextSize = 10
+		badgeText.TextXAlignment = Enum.TextXAlignment.Right
+		badgeText.TextColor3 = THEME.mutedForeground
 		badgeText.Text = "OFF"
-		badgeText.Parent = badge
+		badgeText.Parent = row
 
-		return badge, badgeText, badgeStroke
+		return badgeText
 	end
 
-	local Badge, BadgeText, BadgeStroke = makeStatusCard("Auto Farm", 1)
-	local ClaimBadge, ClaimBadgeText, ClaimBadgeStroke = makeStatusCard("Auto Claim", 2)
-	local EquipBadge, EquipBadgeText, EquipBadgeStroke = makeStatusCard("Auto Equip Best", 3)
-	local SellBadge, SellBadgeText, SellBadgeStroke = makeStatusCard("Auto Sell Inventory", 4)
+	local BadgeText = makeStatusRow("Auto Farm", 1)
+	local ClaimBadgeText = makeStatusRow("Auto Claim", 2)
+	local EquipBadgeText = makeStatusRow("Auto Equip Best", 3)
+	local SellBadgeText = makeStatusRow("Auto Sell Inventory", 4)
 
 	local Footer = Instance.new("Frame")
 	Footer.Name = "Footer"
@@ -1122,17 +1110,13 @@ local function run()
 		end)
 	end
 
-	local function setBadge(on, badge, badgeText, badgeStroke)
+	local function setBadge(on, badgeText)
 		if on then
 			badgeText.Text = "ON"
-			badge.BackgroundColor3 = Color3.fromRGB(20, 83, 45)
 			badgeText.TextColor3 = THEME.success
-			badgeStroke.Color = Color3.fromRGB(34, 120, 70)
 		else
 			badgeText.Text = "OFF"
-			badge.BackgroundColor3 = THEME.secondary
-			badgeText.TextColor3 = THEME.secondaryForeground
-			badgeStroke.Color = THEME.border
+			badgeText.TextColor3 = THEME.mutedForeground
 		end
 	end
 
@@ -1145,10 +1129,10 @@ local function run()
 	end
 
 	local function refreshStatus()
-		setBadge(farming, Badge, BadgeText, BadgeStroke)
-		setBadge(claiming, ClaimBadge, ClaimBadgeText, ClaimBadgeStroke)
-		setBadge(equipBest, EquipBadge, EquipBadgeText, EquipBadgeStroke)
-		setBadge(autoSell, SellBadge, SellBadgeText, SellBadgeStroke)
+		setBadge(farming, BadgeText)
+		setBadge(claiming, ClaimBadgeText)
+		setBadge(equipBest, EquipBadgeText)
+		setBadge(autoSell, SellBadgeText)
 		setNavActive("Auto Farm", farming)
 		setNavActive("Auto Claim", claiming)
 		setNavActive("Auto Equip Best", equipBest)
