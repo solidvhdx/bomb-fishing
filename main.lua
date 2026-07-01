@@ -1071,6 +1071,23 @@ local function run()
 		return SendTagDataRemote
 	end
 
+	local function doClaim()
+		if not alive then
+			return false
+		end
+		if not SendTagDataRemote then
+			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
+		end
+		local bases = getBasesFolder()
+		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
+		local target = base and getCollectInBase(base)
+		if not SendTagDataRemote or not target then
+			return false
+		end
+		SendTagDataRemote:FireServer("Collect", target, "collectCash")
+		return true
+	end
+
 	local function claimOnceWithRetry()
 		waitForSendTagDataRemote(20)
 		getBasesFolder(15)
@@ -1094,23 +1111,6 @@ local function run()
 			task.wait(0.5)
 		end
 		return false
-	end
-
-	local function doClaim()
-		if not alive then
-			return false
-		end
-		if not SendTagDataRemote then
-			SendTagDataRemote = getKnitRE("BaseService", "SendTagData")
-		end
-		local bases = getBasesFolder()
-		local base = getCachedBaseFolder(bases) or resolvePlayerBase()
-		local target = base and getCollectInBase(base)
-		if not SendTagDataRemote or not target then
-			return false
-		end
-		SendTagDataRemote:FireServer("Collect", target, "collectCash")
-		return true
 	end
 
 	local function performInitialClaim()
