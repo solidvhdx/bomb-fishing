@@ -93,7 +93,6 @@ local function run()
 		StartArg = 0,
 		ClaimDelay = 60.0,
 		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
-		StartupPlotWait = 1,
 		_lastClaim = 0,
 	}
 
@@ -1200,10 +1199,10 @@ local function run()
 			return
 		end
 		pressPlotButton()
-		task.wait(CONFIG.StartupPlotWait)
-		claiming = true
-		runAutoClaimOnce()
-		claiming = false
+		SendTagDataRemote = SendTagDataRemote or getKnitRE("BaseService", "SendTagData")
+		resolvePlayerBase()
+		doClaim()
+		CONFIG._lastClaim = os.clock()
 		refreshStatus()
 	end
 
