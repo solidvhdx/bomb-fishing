@@ -1,5 +1,3 @@
---[[ bomb fishing farm ]]
-
 local function protectGui(gui)
 	pcall(function()
 		if protect_gui then protect_gui(gui) end
@@ -1372,7 +1370,7 @@ local function run()
 		if not alive or not farming then
 			return
 		end
-		farmGeneration += 1
+		farmGeneration = farmGeneration + 1
 		local generation = farmGeneration
 		task.spawn(function()
 			while alive and farming and farmGeneration == generation do
