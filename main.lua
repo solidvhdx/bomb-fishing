@@ -1312,9 +1312,11 @@ local function run()
 		end
 
 		rebirthSystemsReady = true
-		if isActiveScript() then
-			refreshStatus()
-		end
+		task.defer(function()
+			if isActiveScript() then
+				refreshStatus()
+			end
+		end)
 	end
 
 	local rebirthSetupRunning = false
