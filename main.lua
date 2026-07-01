@@ -94,7 +94,7 @@ local function run()
 		StartArg = 0,
 		ClaimDelay = 60.0,
 		PlotButtonPath = { "MainScreen", "TopScreen", "Buttons", "Plot", "Button", "Color", "Layout" },
-		StartupPlotWait = 3,
+		StartupPlotWait = 1,
 		_lastClaim = 0,
 	}
 
