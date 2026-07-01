@@ -75,6 +75,34 @@ local function padding(parent, t, r, b, l)
 	return p
 end
 
+	pcall(function() gui.Parent = game:GetService("CoreGui") end)
+end
+
+local function destroyExistingFarmGuis(localPlayer)
+	local function sweep(parent)
+		if not parent then
+			return
+		end
+		for _, child in ipairs(parent:GetChildren()) do
+			if child:IsA("ScreenGui") and child.Name == "BombFishingFarm" then
+				child:Destroy()
+			end
+		end
+	end
+	sweep(game:GetService("CoreGui"))
+	pcall(function()
+		if gethui then
+			sweep(gethui())
+		end
+	end)
+	if localPlayer then
+		local playerGui = localPlayer:FindFirstChild("PlayerGui")
+		if playerGui then
+			sweep(playerGui)
+		end
+	end
+end
+
 local function run()
 	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -88,10 +116,13 @@ local function run()
 
 	if _G.__BombFishingFarmShutdown then
 		pcall(_G.__BombFishingFarmShutdown)
+		_G.__BombFishingFarmShutdown = nil
 	end
+	destroyExistingFarmGuis(LocalPlayer)
 
 	local SCRIPT_ID = tick()
 	_G.__BombFishingFarmActiveId = SCRIPT_ID
+	local alive = true
 
 	local function isActiveScript()
 		return _G.__BombFishingFarmActiveId == SCRIPT_ID and alive
@@ -206,6 +237,8 @@ local function run()
 	Body.Position = UDim2.fromOffset(0, HEADER_H)
 	Body.BackgroundColor3 = THEME.background
 	Body.BorderSizePixel = 0
+	Body.ClipsDescendants = true
+	Body.ZIndex = 2
 	Body.Parent = Root
 
 	local ListPad = Instance.new("Frame")
@@ -223,18 +256,24 @@ local function run()
 
 	local function makeToggleRow(label, order, statusWidth)
 		statusWidth = statusWidth or 34
-		local btn = Instance.new("TextButton")
-		btn.Name = label
-		btn.LayoutOrder = order
-		btn.Size = UDim2.new(1, 0, 0, 28)
-		btn.BackgroundColor3 = THEME.card
-		btn.BorderSizePixel = 0
-		btn.AutoButtonColor = false
-		btn.Text = ""
-		btn.ClipsDescendants = true
-		btn.Parent = ListPad
-		corner(btn, THEME.radiusSm)
-		stroke(btn, THEME.border)
+
+		local row = Instance.new("Frame")
+		row.Name = label
+		row.LayoutOrder = order
+		row.Size = UDim2.new(1, 0, 0, 28)
+		row.BackgroundTransparency = 1
+		row.BorderSizePixel = 0
+		row.Parent = ListPad
+
+		local bg = Instance.new("Frame")
+		bg.Name = "Bg"
+		bg.Size = UDim2.fromScale(1, 1)
+		bg.BackgroundColor3 = THEME.card
+		bg.BorderSizePixel = 0
+		bg.ZIndex = 1
+		bg.Parent = row
+		corner(bg, THEME.radiusSm)
+		stroke(bg, THEME.border)
 
 		local labelLbl = Instance.new("TextLabel")
 		labelLbl.Size = UDim2.new(1, -(statusWidth + 6), 1, 0)
@@ -247,8 +286,12 @@ local function run()
 		labelLbl.TextTruncate = Enum.TextTruncate.AtEnd
 		labelLbl.TextColor3 = THEME.foreground
 		labelLbl.Text = label
+		labelLbl.ZIndex = 2
 		labelLbl.Active = false
-		labelLbl.Parent = btn
+		labelLbl.Parent = row
+		pcall(function()
+			labelLbl.Interactable = false
+		end)
 
 		local statusLbl = Instance.new("TextLabel")
 		statusLbl.Size = UDim2.fromOffset(statusWidth, 28)
@@ -261,24 +304,42 @@ local function run()
 		statusLbl.TextYAlignment = Enum.TextYAlignment.Center
 		statusLbl.TextColor3 = THEME.mutedForeground
 		statusLbl.Text = "OFF"
+		statusLbl.ZIndex = 2
 		statusLbl.Active = false
-		statusLbl.Parent = btn
+		statusLbl.Parent = row
+		pcall(function()
+			statusLbl.Interactable = false
+		end)
 
-		btn.MouseEnter:Connect(function()
-			if btn:GetAttribute("Active") then return end
-			TweenService:Create(btn, TweenInfo.new(0.1), {
+		local hit = Instance.new("TextButton")
+		hit.Name = "Hit"
+		hit.Size = UDim2.fromScale(1, 1)
+		hit.BackgroundTransparency = 1
+		hit.BorderSizePixel = 0
+		hit.AutoButtonColor = false
+		hit.Text = ""
+		hit.ZIndex = 3
+		hit.Parent = row
+
+		hit.MouseEnter:Connect(function()
+			if row:GetAttribute("Active") then
+				return
+			end
+			TweenService:Create(bg, TweenInfo.new(0.1), {
 				BackgroundColor3 = THEME.sidebarAccent,
 			}):Play()
 		end)
-		btn.MouseLeave:Connect(function()
-			if btn:GetAttribute("Active") then return end
-			TweenService:Create(btn, TweenInfo.new(0.1), {
+		hit.MouseLeave:Connect(function()
+			if row:GetAttribute("Active") then
+				return
+			end
+			TweenService:Create(bg, TweenInfo.new(0.1), {
 				BackgroundColor3 = THEME.card,
 			}):Play()
 		end)
 
-		toggleRows[label] = { btn = btn, status = statusLbl }
-		return btn, statusLbl
+		toggleRows[label] = { btn = bg, hit = hit, status = statusLbl, row = row }
+		return hit, statusLbl
 	end
 
 	local FarmBtn, BadgeText = makeToggleRow("Auto Farm", 1)
@@ -294,6 +355,7 @@ local function run()
 	Footer.Position = UDim2.new(0, 0, 1, -FOOTER_H)
 	Footer.BackgroundColor3 = THEME.sidebar
 	Footer.BorderSizePixel = 0
+	Footer.ZIndex = 1
 	Footer.Parent = Root
 
 	local FooterBorder = Instance.new("Frame")
@@ -319,6 +381,7 @@ local function run()
 	ConfirmOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	ConfirmOverlay.BackgroundTransparency = 0.45
 	ConfirmOverlay.BorderSizePixel = 0
+	ConfirmOverlay.Active = false
 	ConfirmOverlay.Visible = false
 	ConfirmOverlay.ZIndex = 100
 	ConfirmOverlay.Parent = ScreenGui
@@ -407,7 +470,6 @@ local function run()
 		setGuiVisible(not guiVisible)
 	end
 
-	local alive = true
 	local connections = {}
 	local function track(conn)
 		table.insert(connections, conn)
@@ -469,10 +531,12 @@ local function run()
 	_G.__BombFishingFarmShutdown = shutdownScript
 
 	local function showCloseConfirm()
+		ConfirmOverlay.Active = true
 		ConfirmOverlay.Visible = true
 	end
 
 	local function hideCloseConfirm()
+		ConfirmOverlay.Active = false
 		ConfirmOverlay.Visible = false
 	end
 
@@ -1179,14 +1243,14 @@ local function run()
 		end
 
 		if not autoRebirth then
-			row.btn:SetAttribute("Active", false)
+			row.row:SetAttribute("Active", false)
 			row.btn.BackgroundColor3 = THEME.card
 			row.status.Text = "OFF"
 			row.status.TextColor3 = THEME.mutedForeground
 			return
 		end
 
-		row.btn:SetAttribute("Active", true)
+		row.row:SetAttribute("Active", true)
 		row.btn.BackgroundColor3 = THEME.sidebarAccent
 
 		local info = getRebirthInfo()
@@ -1343,7 +1407,7 @@ local function run()
 		local row = toggleRows[label]
 		if not row then return end
 		setBadge(on, row.status)
-		row.btn:SetAttribute("Active", on)
+		row.row:SetAttribute("Active", on)
 		row.btn.BackgroundColor3 = on and THEME.sidebarAccent or THEME.card
 	end
 
@@ -1403,34 +1467,54 @@ local function run()
 		refreshStatus()
 	end
 
-	FarmBtn.MouseButton1Click:Connect(function()
+	local function wireToggle(label, handler)
+		local row = toggleRows[label]
+		if not row then
+			return
+		end
+		track(row.hit.MouseButton1Click:Connect(function()
+			if not isActiveScript() then
+				return
+			end
+			handler()
+			refreshStatus()
+		end))
+	end
+
+	wireToggle("Auto Farm", function()
 		farming = not farming
 		if farming then
 			startFarmLoop()
 		end
-		refreshStatus()
 	end)
-	ClaimBtn.MouseButton1Click:Connect(toggleAutoClaim)
-
-	CageBtn.MouseButton1Click:Connect(toggleAutoClaimCage)
-
-	EquipBtn.MouseButton1Click:Connect(function()
+	wireToggle("Auto Claim Money", function()
+		claiming = not claiming
+		if claiming then
+			task.spawn(function()
+				runAutoClaimOnce()
+				refreshStatus()
+			end)
+		end
+	end)
+	wireToggle("Auto Claim Cage", function()
+		claimCage = not claimCage
+		if claimCage then
+			task.spawn(function()
+				runAutoClaimCageOnce()
+				refreshStatus()
+			end)
+		end
+	end)
+	wireToggle("Auto Equip Best", function()
 		equipBest = not equipBest
-		refreshStatus()
 	end)
-
-	SellBtn.MouseButton1Click:Connect(function()
+	wireToggle("Auto Sell Inventory", function()
 		autoSell = not autoSell
-		refreshStatus()
 	end)
-
-	RebirthBtn.MouseButton1Click:Connect(function()
+	wireToggle("Auto Rebirth", function()
 		autoRebirth = not autoRebirth
 		if autoRebirth then
 			ensureRebirthSystems()
-		end
-		refreshStatus()
-		if autoRebirth then
 			tryAutoRebirth()
 		end
 	end)
